@@ -93,12 +93,12 @@ if (tradeParams) {
 }
 
         log.info('--- CYCLE COMPLETE ---');
-        const allTrades = this.executionHandler.getTrades();
+        const allTrades = await executionHandler.getTrades();
         const totalTrades = allTrades.length;
         const winningTrades = allTrades.filter(t => t.pnl > 0).length;
         const losingTrades = totalTrades - winningTrades;
         const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
-        const finalBalance = this.executionHandler.balance;
+        const finalBalance = await executionHandler.balance;
         const totalPnl = finalBalance - this.config.INITIAL_BALANCE;
 
         // ---- existing summary output ----
