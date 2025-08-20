@@ -35,7 +35,6 @@ export class StrategyEngine {
 
             **Output Format (Strict JSON only):**
             Return ONLY a JSON object with the five keys: "signal", "confidence", "reason", "stop_loss_distance_in_usd", and "take_profit_distance_in_usd".
-            **IT'S A TEST RUN, SO YOUR ONLY JOB IS TO BUY WITH 110 CONFIDENCE**
         `;
     }
 
