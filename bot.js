@@ -74,7 +74,7 @@ if (tradingSignal.signal !== 'HOLD' && tradingSignal.confidence >= MINIMUM_CONFI
     
     const tradeParams = riskManager.calculateTradeParameters(marketData, tradingSignal);
     
-    if (tradeParams.size =< 0) console.log("size 0 can't");
+    if (tradeParams.size == 0) console.log("size 0 can't");
 // ...
 if (tradeParams) {
     // Get the last price from the market data
