@@ -94,7 +94,7 @@ if (tradeParams) {
 }
 
         log.info('--- CYCLE COMPLETE ---');
-        const allTrades = await executionHandler.getTrades();
+        const allTrades = marketData.recentFills;
         const totalTrades = allTrades.length;
         const winningTrades = allTrades.filter(t => t.pnl > 0).length;
         const losingTrades = totalTrades - winningTrades;
