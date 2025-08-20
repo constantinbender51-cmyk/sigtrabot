@@ -49,7 +49,7 @@ export class RiskManager {
             log.warn(`[RISK] Insufficient funds. Required: $${marginRequired.toFixed(2)}, Available: $${balance.toFixed(2)}`);
             return null;
         }
-        if (parseFloat(sizeInUnits.toFixed(4) < 0.0001) {
+        if (sizeInUnits < 0.0001) {
             log.warn(`[RISK] Size = 0. Required: 0.0001`);
             return null;
         }
