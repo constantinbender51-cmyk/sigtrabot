@@ -7,6 +7,8 @@ import { RiskManager } from './riskManager.js';
 import { ExecutionHandler } from './executionHandler.js';
 import { log } from './logger.js';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 
 dotenv.config();
 startWebServer();
