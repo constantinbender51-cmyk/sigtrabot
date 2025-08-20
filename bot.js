@@ -19,6 +19,7 @@ const OHLC_DATA_PAIR = 'XBTUSD';
 const CANDLE_INTERVAL = 60;
 const MINIMUM_CONFIDENCE_THRESHOLD = 40;
 const TRADING_INTERVAL_MS = 3600 * 1000; // 1 hour
+let apiCallCount = 0;
 
 /**
  * The main trading logic for a single cycle.
@@ -98,13 +99,13 @@ if (tradeParams) {
         const winningTrades = allTrades.filter(t => t.pnl > 0).length;
         const losingTrades = totalTrades - winningTrades;
         const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
-        const finalBalance = await executionHandler.balance;
+        const finalBalance = marketData.accountBalance;
         const totalPnl = finalBalance - INITIAL_BALANCE;
 
         // ---- existing summary output ----
 console.log("\n\n--- Backtest Performance Summary ---");
 console.log(`(Based on ${apiCallCount} analyzed crossover events)`);
-console.log(`Initial Balance: $${this.config.INITIAL_BALANCE.toFixed(2)}`);
+console.log(`Initial Balance: $${INITIAL_BALANCE.toFixed(2)}`);
 console.log(`Final Balance:   $${finalBalance.toFixed(2)}`);
 console.log(`Total P&L:       $${totalPnl.toFixed(2)}`);
 console.log(`------------------------------------`);
@@ -125,7 +126,7 @@ if (totalTrades > 0) {
 // ---- NEW: always write stats.json ----
 const stats = {
   apiCallCount,
-  initialBalance: this.config.INITIAL_BALANCE,
+  initialBalance: INITIAL_BALANCE,
   finalBalance,
   totalPnl,
   totalTrades,
@@ -135,6 +136,7 @@ const stats = {
   trades: allTrades
 };
 fs.writeFileSync(path.join(process.cwd(), 'logs', 'stats.json'), JSON.stringify(stats, null, 2));
+        apiCallCount++;
         
     } catch (error) {
         log.error("A critical error occurred during the trading cycle:", error);
