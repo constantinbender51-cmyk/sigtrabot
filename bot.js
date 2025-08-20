@@ -58,7 +58,7 @@ async function runTradingCycle() {
         //TEST_RUN: FINISH 
         // Fetch data
         const marketData = await dataHandler.fetchAllData(OHLC_DATA_PAIR, CANDLE_INTERVAL);
-        
+        const INITIAL_BALANCE = marketData.accountBalance;
         const openPositions = marketData.positions?.openPositions?.filter(p => p.symbol === FUTURES_TRADING_PAIR) || [];
         if (openPositions.length > 0) {
             log.info(`Position already open for ${FUTURES_TRADING_PAIR}. Skipping new trade.`);
@@ -99,7 +99,7 @@ if (tradeParams) {
         const losingTrades = totalTrades - winningTrades;
         const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
         const finalBalance = await executionHandler.balance;
-        const totalPnl = finalBalance - this.config.INITIAL_BALANCE;
+        const totalPnl = finalBalance - INITIAL_BALANCE;
 
         // ---- existing summary output ----
 console.log("\n\n--- Backtest Performance Summary ---");
