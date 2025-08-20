@@ -93,50 +93,56 @@ if (tradeParams) {
     }
 }
 
-        log.info('--- CYCLE COMPLETE ---');
-        const allTrades = marketData.recentFills;
-        const totalTrades = allTrades;
-        const winningTrades = allTrades;
-        const losingTrades = totalTrades - winningTrades;
-        const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
-        const finalBalance = marketData.accountBalance;
-        const totalPnl = finalBalance - INITIAL_BALANCE;
+        // --------  STATS  --------
+// marketData.recentFills is an ARRAY of fills
+const allTrades      = Array.isArray(marketData.recentFills)
+                        ? marketData.recentFills
+                        : [];                     // defensive
+const totalTrades    = allTrades.length;
+const winningTrades  = allTrades.filter(t => t.pnl > 0).length;
+const losingTrades   = totalTrades - winningTrades;
+const winRate        = totalTrades ? (winningTrades / totalTrades) * 100 : 0;
+const finalBalance   = marketData.accountBalance;
+const totalPnl       = finalBalance - INITIAL_BALANCE;
 
-        // ---- existing summary output ----
-console.log("\n\n--- Backtest Performance Summary ---");
-console.log(`(Based on ${apiCallCount} analyzed crossover events)`);
-console.log(`Initial Balance: $${INITIAL_BALANCE.toFixed(2)}`);
-console.log(`Final Balance:   $${finalBalance.toFixed(2)}`);
-console.log(`Total P&L:       $${totalPnl.toFixed(2)}`);
-console.log(`------------------------------------`);
-console.log(`Total Trades:    ${totalTrades}`);
-console.log(`Winning Trades:  ${winningTrades}`);
-console.log(`Losing Trades:   ${losingTrades}`);
-console.log(`Win Rate:        ${winRate.toFixed(2)}%`);
-console.log("------------------------------------\n");
+console.log('\n\n--- Performance Summary ---');
+console.log(`Initial Balance : $${INITIAL_BALANCE.toFixed(2)}`);
+console.log(`Final Balance   : $${finalBalance.toFixed(2)}`);
+console.log(`Total P&L       : $${totalPnl.toFixed(2)}`);
+console.log(`Total Trades    : ${totalTrades}`);
+console.log(`Winning Trades  : ${winningTrades}`);
+console.log(`Losing Trades   : ${losingTrades}`);
+console.log(`Win Rate        : ${winRate.toFixed(2)}%`);
+console.log('-----------------------------\n');
 
 if (totalTrades > 0) {
-  console.log("--- Trade Log ---");
-  allTrades.forEach((trade, idx) =>
-    console.log(`Trade #${idx + 1}: ${trade.signal} | P&L: $${trade.pnl.toFixed(2)} | Reason: ${trade.reason}`)
+  console.log('--- Trade Log ---');
+  allTrades.forEach((t, i) =>
+    console.log(`#${i+1}: ${t.signal || t.side} | P&L: $${t.pnl.toFixed(2)} | Reason: ${t.reason || 'n/a'}`)
   );
-  console.log("-----------------\n");
+  console.log('-----------------\n');
 }
 
-// ---- NEW: always write stats.json ----
-const stats = {
-  apiCallCount,
-  initialBalance: INITIAL_BALANCE,
-  finalBalance,
-  totalPnl,
-  totalTrades,
-  winningTrades,
-  losingTrades,
-  winRate,
-  trades: allTrades
-};
-fs.writeFileSync(path.join(process.cwd(), 'logs', 'stats.json'), JSON.stringify(stats, null, 2));
-        apiCallCount++;
+// Persist for web viewer
+fs.writeFileSync(
+  path.join(process.cwd(), 'logs', 'stats.json'),
+  JSON.stringify(
+    {
+      apiCallCount,
+      initialBalance: INITIAL_BALANCE,
+      finalBalance,
+      totalPnl,
+      totalTrades,
+      winningTrades,
+      losingTrades,
+      winRate,
+      trades: allTrades
+    },
+    null,
+    2
+  )
+);
+apiCallCount++;
         
     } catch (error) {
         log.error("A critical error occurred during the trading cycle:", error);
