@@ -95,8 +95,8 @@ if (tradeParams) {
 
         log.info('--- CYCLE COMPLETE ---');
         const allTrades = marketData.recentFills;
-        const totalTrades = allTrades.length;
-        const winningTrades = allTrades.filter(t => t.pnl > 0).length;
+        const totalTrades = allTrades;
+        const winningTrades = allTrades;
         const losingTrades = totalTrades - winningTrades;
         const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
         const finalBalance = marketData.accountBalance;
