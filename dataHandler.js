@@ -112,28 +112,34 @@ export class DataHandler {
         return data;
     }
     /* ---------- FIFO realised-PnL calculator ---------- */
-async realisedPnlFromFills(fills) {
-  const queue = [];          // { side, size, price }  (longs only)
-  let realised = 0;
+// dataHandler.js  (outside the class or as static method)
+async realisedPnlStatsFromFills(fills) {
+  const queue = [];          // { side, size, price }
+  let realisedPnL = 0;
+  let winCount = 0;
+  let totalCloses = 0;
 
   for (const f of fills) {
-    let { side, size, price } = f;     // size is always positive
-    size = side === 'sell' ? -size : +size; // signed qty
+    let { side, size, price } = f;
+    size = side === 'sell' ? -size : +size;   // signed quantity
 
     while (size !== 0 && queue.length) {
       const head = queue[0];
-      const headQty = head.side === 'buy' ? head.size : -head.size; // signed
+      const headQty = head.side === 'buy' ? head.size : -head.size;
       const matchQty = Math.min(Math.abs(size), Math.abs(headQty));
 
-      const closeSide = size > 0 ? 'buy' : 'sell'; // direction of *this* trade
+      // Only when signs differ are we closing a position
+      const closeSide = size > 0 ? 'buy' : 'sell';
       const openSide  = headQty > 0 ? 'buy' : 'sell';
 
-      // Only count when signs differ (closing a position)
       if (closeSide !== openSide) {
-        realised += (price - head.price) * (size > 0 ? 1 : -1) * matchQty;
+        const pnl = (price - head.price) * (size > 0 ? 1 : -1) * matchQty;
+        realisedPnL += pnl;
+        totalCloses++;
+        if (pnl > 0) winCount++;
       }
 
-      // Adjust remaining sizes
+      // Adjust queue
       if (Math.abs(headQty) === matchQty) {
         queue.shift();
       } else {
@@ -143,11 +149,11 @@ async realisedPnlFromFills(fills) {
     }
 
     if (size !== 0) {
-      // leftover opens a new leg
       queue.push({ side: size > 0 ? 'buy' : 'sell', size: Math.abs(size), price });
     }
   }
-  return realised;
+
+  return { realisedPnL, winCount, totalCloses };
 }
     
 }
