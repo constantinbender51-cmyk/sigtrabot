@@ -1,25 +1,24 @@
+// logger.js  (no date-fns)
 import fs from 'fs';
 import path from 'path';
-import { format } from 'date-fns';
 
 const logDir = path.join(process.cwd(), 'logs');
 if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
 
-// Human file + machine file
 const humanLog = path.join(logDir, 'trading-bot.log');
-const jsonLog  = path.join(logDir, 'metrics.ndjson');   // ND-JSON = 1 JSON per line
+const jsonLog  = path.join(logDir, 'metrics.ndjson');
 
 class Logger {
-  _write(kind, msg, extra = {}) {
+  _write(level, msg, extra = {}) {
     const ts = new Date().toISOString();
-    const humanLine = `[${ts}] [${kind.padEnd(5)}] ${msg}`;
-    console.log(humanLine);
-    fs.appendFileSync(humanLog, humanLine + '\n');
+    const line = `[${ts}] [${level.padEnd(5)}] ${msg}`;
+    console.log(line);
+    fs.appendFileSync(humanLog, line + '\n');
 
     if (Object.keys(extra).length) {
       fs.appendFileSync(
         jsonLog,
-        JSON.stringify({ ts, level: kind, msg, ...extra }) + '\n'
+        JSON.stringify({ ts, level, msg, ...extra }) + '\n'
       );
     }
   }
@@ -31,9 +30,8 @@ class Logger {
     this._write('ERROR', msg, extra);
   }
 
-  /* -------- NEW: numeric metrics -------- */
-  metric(name, value, unit = '', tags = {}) {
-    this._write('METRIC', `${name} = ${value} ${unit}`, { metric: name, value, unit, ...tags });
+  metric(metric, value, unit = '', tags = {}) {
+    this._write('METRIC', `${metric} = ${value} ${unit}`, { metric, value, unit, ...tags });
   }
 }
 
