@@ -18,7 +18,10 @@ const CANDLE_INTERVAL = 60;
 const MINIMUM_CONFIDENCE_THRESHOLD = 40;
 const TRADING_INTERVAL_MS = 3600 * 1000; // 1 hour
 
-let _signalNr = 0; let _tradeNr = 0; let _initialMrgn, _newMrgn = 0; const _tradePnLs = [];   // push each trade’s PnL
+let _signalNr = 0; let _tradeNr = 0; let _initialMrgn, _newMrgn = 0; const _tradePnLs = []; // ---- state variables (top of bot.js) ----
+let _initialBalance = null;   // first balance when flat
+let _lastTradeBalance = null; // balance right after the last trade closed
+// push each trade’s PnL
 
 
 /**
