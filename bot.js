@@ -56,7 +56,7 @@ async function runTradingCycle() {
         const openPositions = marketData.positions?.openPositions?.filter(p => p.symbol === FUTURES_TRADING_PAIR) || [];
 /* 1. very first flat cycle → capture baseline */
 if (_initialBalance === null && openPositions.length === 0) {
-  _initialBalance = marketData.accountBalance;
+  _initialBalance = marketData.balance;
   log.metric('initial_balance', _initialBalance, 'USD');
 }
         // remove the early-return for a moment **or** always log balance
