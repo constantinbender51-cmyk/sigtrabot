@@ -22,10 +22,6 @@ const TRADING_INTERVAL_MS = 3600 * 1000; // 1 hour
  * The main trading logic for a single cycle.
  */
 async function runTradingCycle() {
-    //log.metrics()
-    log.metric('_pair', FUTURES_TRADING_PAIR);
-    log.metric('_interval', CANDLE_INTERVAL);
-    
     log.info(`==================================================`);
     log.info(`Bot trading cycle starting for ${FUTURES_TRADING_PAIR}...`);
     log.info(`Minimum confidence threshold set to: ${MINIMUM_CONFIDENCE_THRESHOLD}`);
@@ -48,25 +44,9 @@ async function runTradingCycle() {
     takeProfitMultiplier: 3,
     marginBuffer: 0.4 });
         const executionHandler = new ExecutionHandler(dataHandler.api);
+        let _signalNr = 0; let _tradeNr = 0;
         // Fetch data
         const marketData = await dataHandler.fetchAllData(OHLC_DATA_PAIR, CANDLE_INTERVAL);
-        //log.metric()
-        /* DEBUG: always print the last 5 fills and the metrics we’ll compute */
-const dbgFills = (marketData.fills || []).slice(-5);
-console.log('DEBUG fills:', JSON.stringify(dbgFills, null, 2));
-console.log('DEBUG fill count:', dbgFills.length);
-
-try {
-  const stats = await dataHandler.realizedPnlStatsFromFills(marketData.fills || []);
-  console.log('DEBUG stats', stats);
-  log.metric('realised_pnl', stats.realisedPnL, 'USD');
-  log.metric('win_rate', stats.totalCloses ? (stats.winCount / stats.totalCloses) : 0, '%');
-} catch (err) {
-  console.error('DEBUG FIFO threw', err);
-}
-        
-/* ---- account snapshot ---- */
-        
         
         const openPositions = marketData.positions?.openPositions?.filter(p => p.symbol === FUTURES_TRADING_PAIR) || [];
         if (openPositions.length > 0) {
@@ -76,13 +56,12 @@ try {
 
         // Generate and act on signal
         const tradingSignal = await strategyEngine.generateSignal(marketData);
-        // In bot.js, inside runTradingCycle()
-
-// ... (after generating the tradingSignal)
-
+        _signalNr++;
+        log.metric('_signalNr', _signalNr);
 if (tradingSignal.signal !== 'HOLD' && tradingSignal.confidence >= MINIMUM_CONFIDENCE_THRESHOLD) {
     log.info(`High-confidence signal received (${tradingSignal.confidence}). Proceeding.`);
-    
+    _tradeNr++;
+    log.metric('_tradeNr', _tradeNr);
     const tradeParams = riskManager.calculateTradeParameters(marketData, tradingSignal);
     // ...
 if (tradeParams) {
@@ -96,6 +75,7 @@ if (tradeParams) {
         params: tradeParams,
         lastPrice: lastPrice 
     });
+    log.metric('',);
 } else {
         log.warn("Trade execution skipped by Risk Manager.");
     }
