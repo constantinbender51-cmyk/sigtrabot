@@ -115,9 +115,15 @@ app.get('/performance', (req, res) => {
       .map(JSON.parse);
   }
 
-  // ------------- build the two tables -------------
-  const pairs = [...new Set(metrics.filter(m => m.metric === '_pair').map(m => m.value))];
-  const intervals = [...new Set(metrics.filter(m => m.metric === '_interval').map(m => m.value))];
+  /* ---- build one table row per metric (latest value) ---- */
+  const latest = {};
+  metrics.forEach(m => {
+    if (m.metric) latest[m.metric] = { value: m.value, unit: m.unit || '' };
+  });
+
+  const rows = Object.entries(latest)
+    .map(([k, v]) => `<tr><td>${k}</td><td>${v.value} ${v.unit}</td></tr>`)
+    .join('');
 
   const html = `
   <!DOCTYPE html>
@@ -129,29 +135,20 @@ app.get('/performance', (req, res) => {
     <style>
       body{background:#121212;color:#e0e0e0;font-family:Arial,Helvetica,sans-serif;margin:40px}
       h1{color:#bb86fc}
-      table{border-collapse:collapse;min-width:300px}
+      table{border-collapse:collapse;min-width:320px}
       th,td{padding:8px 12px;border-bottom:1px solid #333}
       th{text-align:left;color:#83a598}
-      .link{color:#83a598}
+      a{color:#83a598}
     </style>
   </head>
   <body>
     <h1>Live Bot Metrics</h1>
-
-    <h2>Trading Pair</h2>
     <table>
-      <tr><th>Pair</th></tr>
-      ${pairs.map(p => `<tr><td>${p}</td></tr>`).join('')}
+      <tr><th>Metric</th><th>Value</th></tr>
+      ${rows}
     </table>
-
-    <h2>Candle Interval</h2>
-    <table>
-      <tr><th>Interval (min)</th></tr>
-      ${intervals.map(i => `<tr><td>${i}</td></tr>`).join('')}
-    </table>
-
     <p style="margin-top:40px">
-      <a class="link" href="/">⬅ Back to raw logs</a> |
+      <a href="/">⬅ Back to raw logs</a> |
       Last updated: ${new Date().toLocaleTimeString()} (auto-refresh 30 s)
     </p>
   </body>
