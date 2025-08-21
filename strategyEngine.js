@@ -1,5 +1,4 @@
 // strategyEngine.js
-
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { log } from './logger.js';
 import { calculateIndicatorSeries } from './indicators.js';
@@ -14,6 +13,35 @@ export class StrategyEngine {
         this.model = genAI.getGenerativeModel({ model: "gemini-2.5-pro", safetySettings });
         log.info("StrategyEngine V3 initialized (Full Autonomy).");
     }
+
+    /* --------------  NEW RETRY HELPER  -------------- */
+    async _callWithRetry(prompt, maxAttempts = 4) {
+        let lastError;
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                log.info(`[GEMINI] Attempt ${attempt}/${maxAttempts}`);
+                const result = await this.model.generateContent(prompt);
+
+                const text = result.response.text?.();
+                if (!text || text.length < 10) {
+                    throw new Error("Empty or too-short response");
+                }
+
+                return { ok: true, text, fullResult: result };
+            } catch (err) {
+                lastError = err;
+                const delay = Math.pow(2, attempt) * 1000 + Math.random() * 500;
+                log.warn(`[GEMINI] Attempt ${attempt} failed: ${err.message}. Retrying in ${delay} ms …`);
+                await new Promise(r => setTimeout(r, delay));
+            }
+        }
+
+        // All retries exhausted
+        log.error(`[GEMINI] All ${maxAttempts} attempts failed. Giving up.`);
+        return { ok: false, error: lastError };
+    }
+    /* -------------------------------------------------- */
 
     _createPrompt(contextualData) {
         const dataPayload = JSON.stringify(contextualData, null, 2);
@@ -44,68 +72,47 @@ export class StrategyEngine {
             return { signal: 'HOLD', confidence: 0, reason: 'Insufficient market data.', stop_loss_distance_in_usd: 0, take_profit_distance_in_usd: 0 };
         }
 
-        let responseText = ""; // Define outside to be accessible in catch
+        const indicatorSeries = calculateIndicatorSeries(marketData.ohlc);
+        if (!indicatorSeries) {
+            return { signal: 'HOLD', confidence: 0, reason: 'Could not calculate indicators.', stop_loss_distance_in_usd: 0, take_profit_distance_in_usd: 0 };
+        }
+
+        const contextualData = {
+            ohlc: marketData.ohlc,
+            indicators: indicatorSeries
+        };
+
+        const prompt = this._createPrompt(contextualData);
+
+        /* --------------  RETRY-AWARE CALL  -------------- */
+        const { ok, text, error } = await this._callWithRetry(prompt);
+        if (!ok) {
+            log.error(`[GEMINI] Final failure: ${error.message}`);
+            return { signal: 'HOLD', confidence: 0, reason: 'Failed to get a valid signal from the AI model.', stop_loss_distance_in_usd: 0, take_profit_distance_in_usd: 0 };
+        }
+
+        /* ----------  PARSE & VALIDATE RESPONSE  ---------- */
         try {
-            // --- STEP 1 & 2: Calculate Indicators and Prepare Payload (Unaltered) ---
-            const indicatorSeries = calculateIndicatorSeries(marketData.ohlc);
-            if (!indicatorSeries) {
-                return { signal: 'HOLD', confidence: 0, reason: 'Could not calculate indicators.', stop_loss_distance_in_usd: 0 };
-            }
+            log.info(`[GEMINI_RAW_RESPONSE]:\n---\n${text}\n---`);
 
-            // --- STEP 2: PREPARE FULL CONTEXTUAL PAYLOAD FOR AI ---
-            const contextualData = {
-                ohlc: marketData.ohlc, // The full 720 candles
-                indicators: indicatorSeries // The full indicator series
-            };
-            // --- STEP 3: MAKE STRATEGIC DECISION WITH AI ---
-            const strategistPrompt = this._createPrompt(contextualData);
-            log.info("Generating signal with FULL 720-candle context...");
-            const strategistResult = await this.model.generateContent(strategistPrompt);
-            responseText = strategistResult.response.text();
+            const jsonMatch = text.match(/\{.*\}/s);
+            if (!jsonMatch) throw new Error("No JSON block found");
 
-            // --- FIX 1: ALWAYS LOG THE RAW RESPONSE ---
-            // This will help us debug empty or strange responses.
-            log.info(`[GEMINI_RAW_RESPONSE]:\n---\n${responseText}\n---`);
+            const signalData = JSON.parse(jsonMatch[0]);
 
-            // --- FIX 2: ADD ROBUST PARSING AND VALIDATION ---
-            // Check if the response is empty or too short to be valid JSON
-            if (!responseText || responseText.length < 10) {
-                throw new Error("Received an empty or invalid response from the AI.");
-            }
-
-            // Use a more resilient method to find the JSON block
-            const jsonMatch = responseText.match(/\{.*\}/s);
-            if (!jsonMatch) {
-                throw new Error("No valid JSON object found in the AI's response.");
-            }
-            
-            const signalJsonText = jsonMatch[0];
-            const signalData = JSON.parse(signalJsonText);
-
-            // Add validation for the new fields
             if (
                 !['LONG', 'SHORT', 'HOLD'].includes(signalData.signal) ||
                 typeof signalData.confidence !== 'number' ||
                 typeof signalData.stop_loss_distance_in_usd !== 'number' ||
                 typeof signalData.take_profit_distance_in_usd !== 'number'
             ) {
-                throw new Error(`AI response is missing required fields or has incorrect types.`);
+                throw new Error("Validation failed");
             }
-            
-            return signalData;
 
-        } catch (error) {
-            log.error(`--- ERROR HANDLING AI RESPONSE ---`);
-            log.error(`This error was caught gracefully. The backtest will continue.`);
-            
-            // This will print the entire object from the Google API, giving us maximum insight.
-            // We use JSON.stringify to ensure the whole object structure is printed neatly.
-            log.error(`Full API Result Object Was: \n${JSON.stringify(strategistResult, null, 2)}`);
-            
-            log.error(`Error Details:`, error.message);
-            log.error(`------------------------------------`);
-            
-            return { signal: 'HOLD', confidence: 0, reason: 'Failed to get a valid signal from the AI model.', stop_loss_distance_in_usd: 0, take_profit_distance_in_usd: 0 };
+            return signalData;
+        } catch (parseErr) {
+            log.error(`[GEMINI] Parsing error: ${parseErr.message}`);
+            return { signal: 'HOLD', confidence: 0, reason: 'Failed to parse AI response.', stop_loss_distance_in_usd: 0, take_profit_distance_in_usd: 0 };
         }
     }
 }
