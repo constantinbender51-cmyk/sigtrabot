@@ -6,6 +6,16 @@ import { BacktestDataHandler } from './backtestDataHandler.js';
 import { StrategyEngine } from './strategyEngine.js';
 import { RiskManager } from './riskManager.js';
 import { BacktestExecutionHandler } from './backtestExecutionHandler.js';
+// --- ATR utility -------------------------------------------------
+function calculateATR(ohlc, period = 14) {
+    const tr = [];
+    for (let i = 1; i < ohlc.length; i++) {
+        const h = ohlc[i].high, l = ohlc[i].low, pc = ohlc[i - 1].close;
+        tr.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+    }
+    const atrWindow = tr.slice(-period);
+    return atrWindow.reduce((a, b) => a + b, 0) / atrWindow.length;
+}
 
 // --- FIX: Added export statement ---
 export class BacktestRunner {
@@ -70,46 +80,40 @@ export class BacktestRunner {
         this.executionHandler.closeTrade(openTrade, exitPrice, currentCandle.timestamp);
     }
 }
-
+    
 
     _checkForSignal(marketData) {
-    const LOOKBACK_PERIOD = 20; // A common period for breakout strategies
+    const LOOKBACK = 20;
+    const MIN_ATR_MULT = 1.2;          // volatility must expand
+    const MIN_ADR_PCT  = 0.005;        // ignore dead ranges (<0.5 % daily range)
 
-    // Ensure we have enough data for the lookback
-    if (marketData.ohlc.length < LOOKBACK_PERIOD + 1) {
-        return false;
+    if (marketData.ohlc.length < LOOKBACK + 1) return false;
+
+    const current = marketData.ohlc[marketData.ohlc.length - 1];
+    const window  = marketData.ohlc.slice(-LOOKBACK - 1, -1);
+
+    const highestHigh = Math.max(...window.map(c => c.high));
+    const lowestLow   = Math.min(...window.map(c => c.low));
+
+    const atrNow   = calculateATR(marketData.ohlc.slice(-21)); // last 21 to get 20 TRs
+    const atrPrev  = calculateATR(marketData.ohlc.slice(-41, -21)); // 20 bars earlier
+    const adrNow   = Math.max(...marketData.ohlc.slice(-24).map(c => c.high - c.low)) / current.close;
+
+    // --- filters ---
+    const volExpansion = atrNow > atrPrev * MIN_ATR_MULT;   // volatility expanding
+    const notDeadRange = adrNow >= MIN_ADR_PCT;             // not stuck in tiny range
+
+    const bullish = current.high > highestHigh && volExpansion && notDeadRange;
+    const bearish = current.low  < lowestLow   && volExpansion && notDeadRange;
+
+    if (bullish || bearish) {
+        const dir = bullish ? 'Bullish' : 'Bearish';
+        const date = new Date(current.timestamp * 1000).toISOString();
+        log.info(`[FILTER] [${date}] ${dir} breakout + vol-expansion → candidate`);
     }
-
-    // The current candle is the last one in the window
-    const currentCandle = marketData.ohlc[marketData.ohlc.length - 1];
-    
-    // The "lookback window" is the 20 candles *before* the current one
-    const lookbackWindow = marketData.ohlc.slice(
-        marketData.ohlc.length - LOOKBACK_PERIOD - 1, 
-        marketData.ohlc.length - 1
-    );
-
-    // Find the highest high and lowest low in that lookback window
-    const highestHigh = Math.max(...lookbackWindow.map(c => c.high));
-    const lowestLow = Math.min(...lookbackWindow.map(c => c.low));
-
-    // Check for a breakout
-    const isBullishBreakout = currentCandle.high > highestHigh;
-    const isBearishBreakout = currentCandle.low < lowestLow;
-
-    if (isBullishBreakout) {
-        const date = new Date(currentCandle.timestamp * 1000).toISOString();
-        log.info(`[FILTER] [${date}] Potential signal found: Bullish Breakout above ${highestHigh}.`);
-        return true;
-    }
-    if (isBearishBreakout) {
-        const date = new Date(currentCandle.timestamp * 1000).toISOString();
-        log.info(`[FILTER] [${date}] Potential signal found: Bearish Breakout below ${lowestLow}.`);
-        return true;
-    }
-
-    return false; // No breakout, no signal
+    return bullish || bearish;
 }
+
 
     async _handleSignal(marketData, currentCandle, apiCallCount) {
         log.info(`[BACKTEST] [Call #${apiCallCount}/${this.config.MAX_API_CALLS}] Analyzing crossover event...`);
