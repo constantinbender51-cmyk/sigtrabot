@@ -133,7 +133,8 @@ async realizedPnlStatsFromFills(fills) {
       const openSide  = headQty > 0 ? 'buy' : 'sell';
 
       if (closeSide !== openSide) {
-        const pnl = (price - head.price) * (size > 0 ? 1 : -1) * matchQty;
+        const pnl = (price - head.price) * matchQty * head.price;
+
         realisedPnL += pnl;
         totalCloses++;
         if (pnl > 0) winCount++;
