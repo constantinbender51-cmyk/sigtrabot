@@ -51,19 +51,34 @@ async function runTradingCycle() {
         const marketData = await dataHandler.fetchAllData(OHLC_DATA_PAIR, CANDLE_INTERVAL);
         
         const openPositions = marketData.positions?.openPositions?.filter(p => p.symbol === FUTURES_TRADING_PAIR) || [];
-        if (openPositions.length > 0) {
+        // ---- inside runTradingCycle, right after fetchAllData ----
+const openPositions = marketData.positions?.openPositions?.filter(p => p.symbol === FUTURES_TRADING_PAIR) || [];
+
+/* 1. very first flat cycle → capture baseline */
+if (_initialBalance === null && openPositions.length === 0) {
+  _initialBalance = marketData.accountBalance;
+  log.metric('initial_balance', _initialBalance, 'USD');
+}
+
+/* 2. position just closed (was open last cycle, now flat) */
+if (_lastTradeBalance !== null && openPositions.length === 0) {
+  const pnl   = marketData.balance - _initialBalance;
+  const perc  = (pnl / _initialBalance) * 100;
+  log.metric('realised_pnl', pnl, 'USD');
+  log.metric('perc_gain', perc, '%');
+  _lastTradeBalance = null;          // reset for next round
+}
+
+/* 3. new trade placed (flat → open) */
+if (openPositions.length > 0) {
             log.info(`Position already open for ${FUTURES_TRADING_PAIR}. Skipping new trade.`);
+            if (_lastTradeBalance === null) {
+  
+  _lastTradeBalance = marketData.accountBalance; // snapshot right after entry
+}
             return;
         }
-        // ALWAYS emit balance and signal count
-log.metric('account_balance', marketData.balance, 'USD');
-
-// emit PnL only after the first trade
-const pnl = _tradeNr === 0 ? 0 : marketData.accountBalance - _initialMrgn;
-const perc = _tradeNr === 0 ? 0 : (pnl * 100) / _initialMrgn;
         
-log.metric('pnl', pnl, 'USD');
-log.metric('perc_gain', perc, '%');
         // Generate and act on signal
         const tradingSignal = await strategyEngine.generateSignal(marketData);
         _signalNr++;
@@ -71,7 +86,7 @@ log.metric('perc_gain', perc, '%');
 if (tradingSignal.signal !== 'HOLD' && tradingSignal.confidence >= MINIMUM_CONFIDENCE_THRESHOLD) {
     log.info(`High-confidence signal received (${tradingSignal.confidence}). Proceeding.`);
     _tradeNr++;
-    log.metric('_tradeNr', _tradeNr);
+    log.metric('trade_nr', _tradeNr);
     const tradeParams = riskManager.calculateTradeParameters(marketData, tradingSignal);
     // ...
 if (tradeParams) {
