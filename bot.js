@@ -64,7 +64,7 @@ async function runTradingCycle() {
         // bot.js  (inside runTradingCycle, after fetchAllData resolves)
 /* ---- account snapshot ---- */
 log.metric('account_balance', marketData.balance, 'USD');
-console.log(JSON.stringify(marketData.fills, null, 2);
+console.log(JSON.stringify(marketData.fills, null, 2));
 /* ---- derive everything from fills ---- */
 const fills = marketData.fills || [];
 
