@@ -112,7 +112,7 @@ export class DataHandler {
         return data;
     }
     /* ---------- FIFO realised-PnL calculator ---------- */
-async function realisedPnlFromFills(fills) {
+async realisedPnlFromFills(fills) {
   const queue = [];          // { side, size, price }  (longs only)
   let realised = 0;
 
