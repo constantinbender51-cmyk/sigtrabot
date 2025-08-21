@@ -63,9 +63,34 @@ async function runTradingCycle() {
         //log.metric()
         // bot.js  (inside runTradingCycle, after fetchAllData resolves)
 
-// --- NEW METRICS ---
+const marketData = await dataHandler.fetchAllData(OHLC_DATA_PAIR, CANDLE_INTERVAL);
+
+/* ---- account snapshot ---- */
 log.metric('account_balance', marketData.balance, 'USD');
-log.metric('recent_fills',    marketData.fills?.length || 0, 'fills');
+
+/* ---- derive everything from fills ---- */
+const fills = marketData.fills || [];
+
+/* 1. raw counts / volumes */
+const numFills   = fills.length;
+const usdVolume  = fills.reduce((sum, f) => sum + (+f.price * +f.qty), 0);
+
+/* 2. PnL */
+const realisedPnL = fills.reduce((sum, f) => sum + (+f.realisedPnl || 0), 0);
+
+/* 3. win-rate */
+const winners = fills.filter(f => +f.realisedPnl > 0).length;
+const winRate = numFills ? (winners / numFills) : 0;
+
+/* 4. average trade */
+const avgTrade = numFills ? realisedPnL / numFills : 0;
+
+/* ---- emit ---- */
+log.metric('fills_last100',        numFills,   'fills');
+log.metric('usd_volume_last100',   usdVolume,  'USD');
+log.metric('realised_pnl_last100', realisedPnL,'USD');
+log.metric('win_rate_last100',     winRate,    '%');
+log.metric('avg_trade_last100',    avgTrade,   'USD');
         
         const openPositions = marketData.positions?.openPositions?.filter(p => p.symbol === FUTURES_TRADING_PAIR) || [];
         if (openPositions.length > 0) {
