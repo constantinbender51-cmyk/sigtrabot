@@ -62,37 +62,24 @@ async function runTradingCycle() {
         const marketData = await dataHandler.fetchAllData(OHLC_DATA_PAIR, CANDLE_INTERVAL);
         //log.metric()
         // bot.js  (inside runTradingCycle, after fetchAllData resolves)
-/* ---- account snapshot ---- */
+
+        /* DEBUG: always print the last 5 fills and the metrics we’ll compute */
+const dbgFills = (marketData.fills || []).slice(-5);
+console.log('DEBUG fills:', JSON.stringify(dbgFills, null, 2));
+console.log('DEBUG fill count:', dbgFills.length);
+
+const stats = await dataHandler.realizedPnlStatsFromFills(dbgFills);
+console.log('DEBUG stats →', stats);
+
+/* only then emit metrics */
 log.metric('account_balance', marketData.balance, 'USD');
-/* ---- derive metrics from fills ---- */
-// right after const fills = marketData.fills || [];
-const fills = marketData.fills?.slice(-6) || [];   // only last 2
-
-
-// 1. basic counts / volume
-const numFills  = fills.length;
-const usdVolume = fills.reduce((sum, f) => sum + f.price * f.size, 0);
-
-// 2. approximate realised PnL (FIFO assumption: sell closes previous buy)
-let openBtc = 0;          // running inventory
-let openCost = 0;         // running cost basis
-
-// 3. win-rate (wins = sells with positive PnL)
-
-const stats = await dataHandler.realizedPnlStatsFromFills(fills);
-
-
-// 4. average trade
-const avgTrade = numFills ? stats.realisedPnL / numFills : 0;
-
-/* ---- emit ---- */
-log.metric('fills_last100',        numFills,   'fills');
-log.metric('usd_volume_last100',   usdVolume,  'USD');
-log.metric('avg_trade_last100',    avgTrade,   'USD');
-log.metric('realised_pnl_last100', stats.realisedPnL, 'USD');
-log.metric('win_rate_last100',
-           stats.totalCloses ? (stats.winCount / stats.totalCloses) : 0,
-           '%');
+log.metric('fill_count',        dbgFills.length, 'fills');
+if (stats.totalCloses) {
+  log.metric('realised_pnl_last100',  stats.realisedPnL, 'USD');
+  log.metric('win_rate_last100',      stats.winCount / stats.totalCloses, '%');
+}
+        
+/* ---- account snapshot ---- */
         
         
         const openPositions = marketData.positions?.openPositions?.filter(p => p.symbol === FUTURES_TRADING_PAIR) || [];
