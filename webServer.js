@@ -1,4 +1,4 @@
-// webServer.js
+// webServer.js  (white & sleek)
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
@@ -8,10 +8,23 @@ const PORT = process.env.PORT || 3000;
 const metricsFile = path.join(process.cwd(), 'logs', 'metrics.ndjson');
 const humanLog    = path.join(process.cwd(), 'logs', 'trading-bot.log');
 
+const css = `
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:#212529;background:#ffffff;line-height:1.6;padding:2rem}
+  h1{margin-bottom:1.2rem;font-weight:600;color:#0f62fe}
+  a.btn{display:inline-block;margin-bottom:1.5rem;padding:.6rem 1.2rem;border-radius:6px;background:#0f62fe;color:#fff;text-decoration:none;font-size:.9rem;transition:background .2s}
+  a.btn:hover{background:#0043ce}
+  table{width:100%;max-width:600px;border-collapse:collapse;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  th,td{padding:.75rem 1rem;text-align:left;border-bottom:1px solid #e5e5e5}
+  th{font-weight:600;color:#495057;background:#f8f9fa}
+  tr:last-child td{border-bottom:none}
+  pre{background:#f8f9fa;border:1px solid #e5e5e5;border-radius:4px;padding:1rem;font-size:.85rem;white-space:pre-wrap;word-break:break-all;color:#212529}
+  .subtitle{font-size:.9rem;color:#6c757d;margin-bottom:1.5rem}
+`;
+
 export function startWebServer() {
   const app = express();
 
-  /* ---------- 1. PERFORMANCE DASHBOARD ( / ) ---------- */
   app.get('/', (req, res) => {
     let metrics = [];
     if (fs.existsSync(metricsFile)) {
@@ -34,37 +47,24 @@ export function startWebServer() {
         <meta charset="utf-8"/>
         <title>Bot Performance</title>
         <meta http-equiv="refresh" content="30">
-        <style>
-          body{background:#121212;color:#e0e0e0;font-family:Arial,Helvetica,sans-serif;margin:40px}
-          h1{color:#bb86fc}
-          table{border-collapse:collapse;min-width:320px}
-          th,td{padding:8px 12px;border-bottom:1px solid #333}
-          th{text-align:left;color:#83a598}
-          a.button{display:inline-block;margin-bottom:15px;padding:8px 14px;background:#bb86fc;color:#121212;border-radius:4px;text-decoration:none;font-weight:bold}
-        </style>
+        <style>${css}</style>
       </head>
       <body>
         <h1>Live Bot Performance</h1>
-        <a class="button" href="/logs">📄 View Raw Logs</a>
+        <a class="btn" href="/logs">📄 Raw Logs</a>
         <table>
           <tr><th>Metric</th><th>Value</th></tr>
           ${rows}
         </table>
-        <p style="margin-top:40px">
-          Last updated: ${new Date().toLocaleTimeString()} (auto-refresh 30 s)
-        </p>
+        <p class="subtitle">Last updated: ${new Date().toLocaleTimeString()}</p>
       </body>
       </html>`;
     res.send(html);
   });
 
-  /* ---------- 2. RAW LOG VIEWER ( /logs ) ---------- */
   app.get('/logs', (req, res) => {
     fs.readFile(humanLog, 'utf8', (err, data) => {
-      if (err) {
-        log.error('Could not read log file for web view.', err);
-        return res.status(500).send('Error reading log file.');
-      }
+      if (err) return res.status(500).send('Cannot read log file.');
       const html = `
         <!DOCTYPE html>
         <html>
@@ -72,17 +72,11 @@ export function startWebServer() {
           <meta charset="utf-8"/>
           <title>Trading Bot Logs</title>
           <meta http-equiv="refresh" content="30">
-          <style>
-            body{background:#121212;color:#e0e0e0;font-family:Courier,monospace;font-size:14px;margin:0;padding:20px}
-            h1{color:#bb86fc}
-            pre{white-space:pre-wrap;background:#1e1e1e;padding:15px;border-radius:5px;border:1px solid #333}
-            a.button{display:inline-block;margin-bottom:15px;padding:8px 14px;background:#bb86fc;color:#121212;border-radius:4px;text-decoration:none;font-weight:bold}
-          </style>
+          <style>${css}</style>
         </head>
         <body>
-          <h1>Trading Bot Live Log</h1>
-          <a class="button" href="/">📊 Back to Performance</a>
-          <p>Last updated: ${new Date().toLocaleTimeString()}. Auto-refresh every 30 seconds.</p>
+          <h1>Trading Bot Logs</h1>
+          <a class="btn" href="/">📊 Performance</a>
           <pre>${data.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
         </body>
         </html>`;
