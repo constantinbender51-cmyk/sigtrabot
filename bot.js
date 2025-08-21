@@ -48,21 +48,9 @@ async function runTradingCycle() {
     takeProfitMultiplier: 3,
     marginBuffer: 0.4 });
         const executionHandler = new ExecutionHandler(dataHandler.api);
-
-        //TEST_RUN: START 
-        /*await executionHandler.placeOrder({
-                    signal: "LONG",
-                    pair: "pf_xbtusd",
-                    params:  { size: 0.0007, // Use toFixed for reasonable precision, matching Min Lot.
-            stopLoss: 2,
-            takeProfit: 3 }
-                });*/
-        //TEST_RUN: FINISH 
         // Fetch data
         const marketData = await dataHandler.fetchAllData(OHLC_DATA_PAIR, CANDLE_INTERVAL);
         //log.metric()
-        // bot.js  (inside runTradingCycle, after fetchAllData resolves)
-
         /* DEBUG: always print the last 5 fills and the metrics we’ll compute */
 const dbgFills = (marketData.fills || []).slice(-5);
 console.log('DEBUG fills:', JSON.stringify(dbgFills, null, 2));
