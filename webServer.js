@@ -103,61 +103,61 @@ app.get('/', (req, res) => {
 });
 
   // 2. NEW PERFORMANCE DASHBOARD
-  app.get('/performance', (req, res) => {
-    const { cycles } = parseLogForPerformance();
+  // ----- inside webServer.js -----
+app.get('/performance', (req, res) => {
+  const jsonLog = path.join(process.cwd(), 'logs', 'metrics.ndjson');
+  let metrics = [];
+  if (fs.existsSync(jsonLog)) {
+    metrics = fs
+      .readFileSync(jsonLog, 'utf8')
+      .split('\n')
+      .filter(Boolean)
+      .map(JSON.parse);
+  }
 
-    let totalPnL = 0;
-    const balances = [];
-    for (const c of cycles) {
-      totalPnL += c.pnl;
-      if (c.balance !== null) balances.push(c.balance);
-    }
-    const startBal = balances[0] || 0;
-    const endBal = balances[balances.length - 1] || startBal;
-    const pctChange = startBal ? ((endBal - startBal) / startBal * 100).toFixed(2) : 0;
+  // ------------- build the two tables -------------
+  const pairs = [...new Set(metrics.filter(m => m.metric === '_pair').map(m => m.value))];
+  const intervals = [...new Set(metrics.filter(m => m.metric === '_interval').map(m => m.value))];
 
-    const spark = balances.map((b, i) => `<span title="${b}">${i ? '' : '|'}${b >= (balances[i-1] || b) ? '▲' : '▼'}</span>`).join('');
+  const html = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Bot Metrics</title>
+    <meta http-equiv="refresh" content="30">
+    <style>
+      body{background:#121212;color:#e0e0e0;font-family:Arial,Helvetica,sans-serif;margin:40px}
+      h1{color:#bb86fc}
+      table{border-collapse:collapse;min-width:300px}
+      th,td{padding:8px 12px;border-bottom:1px solid #333}
+      th{text-align:left;color:#83a598}
+      .link{color:#83a598}
+    </style>
+  </head>
+  <body>
+    <h1>Live Bot Metrics</h1>
 
-    const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8"/>
-      <title>Bot Performance</title>
-      <meta http-equiv="refresh" content="30">
-      <style>
-        body{background:#121212;color:#e0e0e0;font-family:Arial,Helvetica,sans-serif;margin:40px}
-        h1{color:#bb86fc}
-        table{border-collapse:collapse;width:100%;max-width:600px}
-        th,td{padding:8px 12px;border-bottom:1px solid #333}
-        th{text-align:left;color:#83a598}
-        .profit{color:#8ec07c}
-        .loss{color:#fb4934}
-        .spark{font-family:monospace;letter-spacing:-2px}
-      </style>
-    </head>
-    <body>
-      <h1>Performance Overview</h1>
-      <table>
-        <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Total Cycles</td><td>${cycles.length}</td></tr>
-        <tr><td>Start Balance</td><td>${startBal.toFixed(4)} USD</td></tr>
-        <tr><td>Current Balance</td><td>${endBal.toFixed(4)} USD</td></tr>
-        <tr><td>Total Realised PnL</td><td class="${totalPnL >= 0 ? 'profit' : 'loss'}">${totalPnL.toFixed(4)} USD</td></tr>
-        <tr><td>Return %</td><td class="${pctChange >= 0 ? 'profit' : 'loss'}">${pctChange} %</td></tr>
-      </table>
+    <h2>Trading Pair</h2>
+    <table>
+      <tr><th>Pair</th></tr>
+      ${pairs.map(p => `<tr><td>${p}</td></tr>`).join('')}
+    </table>
 
-      <h2>Balance History Sparkline</h2>
-      <div class="spark">${spark}</div>
+    <h2>Candle Interval</h2>
+    <table>
+      <tr><th>Interval (min)</th></tr>
+      ${intervals.map(i => `<tr><td>${i}</td></tr>`).join('')}
+    </table>
 
-      <p style="margin-top:40px">
-        <a href="/" style="color:#83a598">⬅ Raw log view</a> | 
-        Last updated: ${new Date().toLocaleTimeString()} (auto-refresh 30 s)
-      </p>
-    </body>
-    </html>`;
-    res.send(html);
-  });
+    <p style="margin-top:40px">
+      <a class="link" href="/">⬅ Back to raw logs</a> |
+      Last updated: ${new Date().toLocaleTimeString()} (auto-refresh 30 s)
+    </p>
+  </body>
+  </html>`;
+  res.send(html);
+});
 
   app.listen(PORT, () => {
     log.info(`Web server started. Log viewer: http://localhost:${PORT}`);
