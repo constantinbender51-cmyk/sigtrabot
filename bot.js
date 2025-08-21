@@ -60,7 +60,7 @@ async function runTradingCycle() {
         //TEST_RUN: FINISH 
         // Fetch data
         const marketData = await dataHandler.fetchAllData(OHLC_DATA_PAIR, CANDLE_INTERVAL);
-        const INITIAL_BALANCE = marketData.accountBalance;
+        
         const openPositions = marketData.positions?.openPositions?.filter(p => p.symbol === FUTURES_TRADING_PAIR) || [];
         if (openPositions.length > 0) {
             log.info(`Position already open for ${FUTURES_TRADING_PAIR}. Skipping new trade.`);
