@@ -22,6 +22,10 @@ const TRADING_INTERVAL_MS = 3600 * 1000; // 1 hour
  * The main trading logic for a single cycle.
  */
 async function runTradingCycle() {
+    //log.metrics()
+    log.metric('_pair', FUTURES_TRADING_PAIR);
+    log.metric('_interval', CANDLE_INTERVAL);
+    
     log.info(`==================================================`);
     log.info(`Bot trading cycle starting for ${FUTURES_TRADING_PAIR}...`);
     log.info(`Minimum confidence threshold set to: ${MINIMUM_CONFIDENCE_THRESHOLD}`);
@@ -85,9 +89,6 @@ if (tradeParams) {
         params: tradeParams,
         lastPrice: lastPrice 
     });
-    //log.metrics()
-    log.metric('_pair', FUTURES_TRADING_PAIR);
-    log.metric('_interval', CANDLE_INTERVAL);
 } else {
         log.warn("Trade execution skipped by Risk Manager.");
     }
