@@ -67,28 +67,16 @@ log.metric('account_balance', marketData.balance, 'USD');
 /* ---- derive metrics from fills ---- */
 const fills = marketData.fills || [];
 
+        const realisedPnL = await dataHandler.realisedPnlFromFills(fills);
+log.metric('realised_pnl_last100', realisedPnL, 'USD');
+        
 // 1. basic counts / volume
 const numFills  = fills.length;
 const usdVolume = fills.reduce((sum, f) => sum + f.price * f.size, 0);
 
 // 2. approximate realised PnL (FIFO assumption: sell closes previous buy)
-let realisedPnL = 0;
 let openBtc = 0;          // running inventory
 let openCost = 0;         // running cost basis
-
-for (const f of fills) {
-  if (f.side === 'buy') {
-    openBtc  += f.size;
-    openCost += f.price * f.size;
-  } else if (f.side === 'sell' && openBtc > 0) {
-    const closeQty = Math.min(openBtc, f.size);
-    const avgCost  = openCost / openBtc;
-    realisedPnL   += (f.price - avgCost) * closeQty;
-
-    openBtc  -= closeQty;
-    openCost -= avgCost * closeQty;
-  }
-}
 
 // 3. win-rate (wins = sells with positive PnL)
 const sells = fills.filter(f => f.side === 'sell');
