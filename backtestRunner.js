@@ -83,9 +83,9 @@ export class BacktestRunner {
     
 
     _checkForSignal(marketData) {
-    const LOOKBACK = 20;
-    const MIN_ATR_MULT = 1.2;          // volatility must expand
-    const MIN_ADR_PCT  = 0.005;        // ignore dead ranges (<0.5 % daily range)
+    const LOOKBACK = 96;
+    const MIN_ATR_MULT = 1.2;
+    const MIN_ADR_PCT  = 0.005;
 
     if (marketData.ohlc.length < LOOKBACK + 1) return false;
 
@@ -95,16 +95,19 @@ export class BacktestRunner {
     const highestHigh = Math.max(...window.map(c => c.high));
     const lowestLow   = Math.min(...window.map(c => c.low));
 
-    const atrNow   = calculateATR(marketData.ohlc.slice(-21)); // last 21 to get 20 TRs
-    const atrPrev  = calculateATR(marketData.ohlc.slice(-41, -21)); // 20 bars earlier
-    const adrNow   = Math.max(...marketData.ohlc.slice(-24).map(c => c.high - c.low)) / current.close;
+    const atrNow  = calculateATR(marketData.ohlc.slice(-21));
+    const atrPrev = calculateATR(marketData.ohlc.slice(-41, -21));
+    const adrNow  = Math.max(...marketData.ohlc.slice(-24).map(c => c.high - c.low)) / current.close;
 
-    // --- filters ---
-    const volExpansion = atrNow > atrPrev * MIN_ATR_MULT;   // volatility expanding
-    const notDeadRange = adrNow >= MIN_ADR_PCT;             // not stuck in tiny range
+    const volExpansion = atrNow > atrPrev * MIN_ATR_MULT;
+    const notDeadRange = adrNow >= MIN_ADR_PCT;
 
-    const bullish = current.high > highestHigh && volExpansion && notDeadRange;
-    const bearish = current.low  < lowestLow   && volExpansion && notDeadRange;
+    // --- distance filter applied here ---
+    const minDistance = highestHigh * 0.003;
+    const maxDistance = lowestLow   * 0.003;
+
+    const bullish = current.high > highestHigh + minDistance && volExpansion && notDeadRange;
+    const bearish = current.low  < lowestLow   - maxDistance && volExpansion && notDeadRange;
 
     if (bullish || bearish) {
         const dir = bullish ? 'Bullish' : 'Bearish';
@@ -113,6 +116,7 @@ export class BacktestRunner {
     }
     return bullish || bearish;
 }
+
 
 
     async _handleSignal(marketData, currentCandle, apiCallCount) {
