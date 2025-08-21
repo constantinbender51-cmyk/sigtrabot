@@ -18,7 +18,8 @@ const CANDLE_INTERVAL = 60;
 const MINIMUM_CONFIDENCE_THRESHOLD = 40;
 const TRADING_INTERVAL_MS = 3600 * 1000; // 1 hour
 
-let _signalNr = 0; let _tradeNr = 0; let _initialMrgn, _newMrgn = 0; 
+let _signalNr = 0; let _tradeNr = 0; let _initialMrgn, _newMrgn = 0; const _tradePnLs = [];   // push each trade’s PnL
+
 
 /**
  * The main trading logic for a single cycle.
@@ -60,6 +61,7 @@ log.metric('account_balance', marketData.balance, 'USD');
 // emit PnL only after the first trade
 const pnl = _tradeNr === 0 ? 0 : marketData.accountBalance - _initialMrgn;
 const perc = _tradeNr === 0 ? 0 : (pnl * 100) / _initialMrgn;
+        
 log.metric('pnl', pnl, 'USD');
 log.metric('perc_gain', perc, '%');
         // Generate and act on signal
