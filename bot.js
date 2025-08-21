@@ -56,7 +56,6 @@ async function runTradingCycle() {
         }
         // ALWAYS emit balance and signal count
 log.metric('account_balance', marketData.balance, 'USD');
-log.metric('signal_nr', _signalNr);
 
 // emit PnL only after the first trade
 const pnl = _tradeNr === 0 ? 0 : marketData.accountBalance - _initialMrgn;
