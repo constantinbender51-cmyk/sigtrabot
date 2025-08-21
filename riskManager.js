@@ -50,8 +50,8 @@ export class RiskManager {
             return null;
         }
         if (sizeInUnits < 0.0001) {
-            log.warn(`[RISK] Size = 0. Required: 0.0001`);
-            sizeInUnits = 0.0001;
+            log.warn(`[FAIL] Size = 0. Required: 0.0001`);
+            return null:
         }
 
         // --- Final Trade Parameters ---
