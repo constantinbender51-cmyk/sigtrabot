@@ -64,22 +64,41 @@ async function runTradingCycle() {
         // bot.js  (inside runTradingCycle, after fetchAllData resolves)
 /* ---- account snapshot ---- */
 log.metric('account_balance', marketData.balance, 'USD');
-console.log(JSON.stringify(marketData.fills, null, 2));
-/* ---- derive everything from fills ---- */
+/* ---- derive metrics from fills ---- */
 const fills = marketData.fills || [];
 
-/* 1. raw counts / volumes */
-const numFills   = fills.length;
-const usdVolume  = fills.reduce((sum, f) => sum + (+f.price * +f.qty), 0);
+// 1. basic counts / volume
+const numFills  = fills.length;
+const usdVolume = fills.reduce((sum, f) => sum + f.price * f.size, 0);
 
-/* 2. PnL */
-const realisedPnL = fills.reduce((sum, f) => sum + (+f.realisedPnl || 0), 0);
+// 2. approximate realised PnL (FIFO assumption: sell closes previous buy)
+let realisedPnL = 0;
+let openBtc = 0;          // running inventory
+let openCost = 0;         // running cost basis
 
-/* 3. win-rate */
-const winners = fills.filter(f => +f.realisedPnl > 0).length;
-const winRate = numFills ? (winners / numFills) : 0;
+for (const f of fills) {
+  if (f.side === 'buy') {
+    openBtc  += f.size;
+    openCost += f.price * f.size;
+  } else if (f.side === 'sell' && openBtc > 0) {
+    const closeQty = Math.min(openBtc, f.size);
+    const avgCost  = openCost / openBtc;
+    realisedPnL   += (f.price - avgCost) * closeQty;
 
-/* 4. average trade */
+    openBtc  -= closeQty;
+    openCost -= avgCost * closeQty;
+  }
+}
+
+// 3. win-rate (wins = sells with positive PnL)
+const sells = fills.filter(f => f.side === 'sell');
+const winners = sells.filter(f => {
+  const avgCost = openCost / openBtc; // cost at time of this sell
+  return f.price > avgCost;
+}).length;
+const winRate = sells.length ? winners / sells.length : 0;
+
+// 4. average trade
 const avgTrade = numFills ? realisedPnL / numFills : 0;
 
 /* ---- emit ---- */
