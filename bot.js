@@ -65,7 +65,7 @@ if (_initialBalance === null && openPositions.length === 0) {
 
 /* 2. position just closed (was open last cycle, now flat) */
 if (_lastTradeBalance !== null && openPositions.length === 0) {
-  const pnl   = marketData.balance - _initialBalance;
+  const pnl   = marketData.accountBalance - _initialBalance;
   const perc  = (pnl / _initialBalance) * 100;
   log.metric('realised_pnl', pnl, 'USD');
   log.metric('perc_gain', perc, '%');
@@ -103,7 +103,6 @@ if (tradeParams) {
         params: tradeParams,
         lastPrice: lastPrice 
     });
-    log.metric('',);
 } else {
         log.warn("Trade execution skipped by Risk Manager.");
     }
