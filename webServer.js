@@ -9,17 +9,36 @@ const metricsFile = path.join(process.cwd(), 'logs', 'metrics.ndjson');
 const humanLog    = path.join(process.cwd(), 'logs', 'trading-bot.log');
 
 const css = `
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:#212529;background:#ffffff;line-height:1.6;padding:2rem}
-  h1{margin-bottom:1.2rem;font-weight:600;color:#0f62fe}
-  a.btn{display:inline-block;margin-bottom:1.5rem;padding:.6rem 1.2rem;border-radius:6px;background:#0f62fe;color:#fff;text-decoration:none;font-size:.9rem;transition:background .2s}
-  a.btn:hover{background:#0043ce}
-  table{width:100%;max-width:600px;border-collapse:collapse;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-  th,td{padding:.75rem 1rem;text-align:left;border-bottom:1px solid #e5e5e5}
-  th{font-weight:600;color:#495057;background:#f8f9fa}
-  tr:last-child td{border-bottom:none}
-  pre{background:#f8f9fa;border:1px solid #e5e5e5;border-radius:4px;padding:1rem;font-size:.85rem;white-space:pre-wrap;word-break:break-all;color:#212529}
-  .subtitle{font-size:.9rem;color:#6c757d;margin-bottom:1.5rem}
+  * { margin:0; padding:0; box-sizing:border-box }
+html { font-size:16px }                /* root size for rem */
+body {
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  color:#212529; background:#ffffff; line-height:1.6;
+  padding:1rem; min-height:100vh;
+}
+h1 { margin-bottom:1rem; font-weight:600; color:#0f62fe; font-size:1.75rem }
+a.btn {
+  display:inline-block; margin-bottom:1rem; padding:.9rem 1.6rem;
+  border-radius:8px; background:#0f62fe; color:#fff;
+  text-decoration:none; font-size:1.1rem; font-weight:500;
+  min-width:12rem; text-align:center;
+}
+table {
+  width:100%; border-collapse:collapse; box-shadow:0 1px 4px rgba(0,0,0,.08);
+  border-radius:8px; overflow:hidden
+}
+th,td { padding:1rem; border-bottom:1px solid #e5e5e5; font-size:1.1rem }
+th { font-weight:600; background:#f8f9fa }
+pre {
+  background:#f8f9fa; border:1px solid #e5e5e5;
+  border-radius:8px; padding:1rem; font-size:1rem;
+  white-space:pre-wrap; word-break:break-all; overflow-x:auto
+}
+@media (max-width:600px) {
+  body { padding:.75rem }
+  h1   { font-size:1.5rem }
+  table th, table td { padding:.75rem .5rem; font-size:1rem }
+}
 `;
 
 export function startWebServer() {
