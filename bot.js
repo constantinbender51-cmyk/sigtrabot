@@ -68,15 +68,13 @@ const dbgFills = (marketData.fills || []).slice(-5);
 console.log('DEBUG fills:', JSON.stringify(dbgFills, null, 2));
 console.log('DEBUG fill count:', dbgFills.length);
 
-const stats = await dataHandler.realizedPnlStatsFromFills(dbgFills);
-console.log('DEBUG stats →', stats);
-
-/* only then emit metrics */
-log.metric('account_balance', marketData.balance, 'USD');
-log.metric('fill_count',        dbgFills.length, 'fills');
-if (stats.totalCloses) {
-  log.metric('realised_pnl_last100',  stats.realisedPnL, 'USD');
-  log.metric('win_rate_last100',      stats.winCount / stats.totalCloses, '%');
+try {
+  const stats = await dataHandler.realizedPnlStatsFromFills(marketData.fills || []);
+  console.log('DEBUG stats', stats);
+  log.metric('realised_pnl', stats.realisedPnL, 'USD');
+  log.metric('win_rate', stats.totalCloses ? (stats.winCount / stats.totalCloses) : 0, '%');
+} catch (err) {
+  console.error('DEBUG FIFO threw', err);
 }
         
 /* ---- account snapshot ---- */
