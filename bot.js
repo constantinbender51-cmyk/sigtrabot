@@ -61,10 +61,11 @@ async function runTradingCycle() {
         // Fetch data
         const marketData = await dataHandler.fetchAllData(OHLC_DATA_PAIR, CANDLE_INTERVAL);
         //log.metric()
-        log.metric('',);
-        log.metric('',);
-        log.metric('',);
-        log.metric('',);
+        // bot.js  (inside runTradingCycle, after fetchAllData resolves)
+
+// --- NEW METRICS ---
+log.metric('account_balance', marketData.balance, 'USD');
+log.metric('recent_fills',    marketData.fills?.length || 0, 'fills');
         
         const openPositions = marketData.positions?.openPositions?.filter(p => p.symbol === FUTURES_TRADING_PAIR) || [];
         if (openPositions.length > 0) {
