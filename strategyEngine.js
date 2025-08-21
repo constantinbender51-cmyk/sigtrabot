@@ -95,17 +95,18 @@ export class StrategyEngine {
             return signalData;
 
         } catch (error) {
-            log.error(`--- ERROR HANDLING AI RESPONSE ---`);
-            log.error(`This error was caught gracefully. The backtest will continue.`);
-            
-            // This will print the entire object from the Google API, giving us maximum insight.
-            // We use JSON.stringify to ensure the whole object structure is printed neatly.
-            log.error(`Full API Result Object Was: \n${JSON.stringify(strategistResult, null, 2)}`);
-            
-            log.error(`Error Details:`, error.message);
-            log.error(`------------------------------------`);
-            
-            return { signal: 'HOLD', confidence: 0, reason: 'Failed to get a valid signal from the AI model.', stop_loss_distance_in_usd: 0, take_profit_distance_in_usd: 0 };
-        }
+    log.error(`--- ERROR HANDLING AI RESPONSE ---`);
+    log.error(`This error was caught gracefully. The backtest will continue.`);
+    log.error(`Full API Result Object Was: \n${JSON.stringify(strategistResult, null, 2)}`);
++
++   // Print the HTTP-level error body that Gemini sent back
++   log.error(`Gemini API rejected the request:`, JSON.stringify(error.response, null, 2));
+
+    log.error(`Error Details:`, error.message);
+    log.error(`------------------------------------`);
+
+    return { signal: 'HOLD', confidence: 0, reason: 'Failed to get a valid signal from the AI model.', stop_loss_distance_in_usd: 0, take_profit_distance_in_usd: 0 };
+}
+
     }
 }
