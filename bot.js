@@ -106,6 +106,7 @@ const finalBalance   = marketData.accountBalance;
 const totalPnl       = finalBalance - INITIAL_BALANCE;
 
 console.log('\n\n--- Performance Summary ---');
+        console.log(JSON.stringify(allTrades, null, 2));
 console.log(`Initial Balance : $${INITIAL_BALANCE}`);
 console.log(`Final Balance   : $${finalBalance}`);
 console.log(`Total P&L       : $${totalPnl}`);
