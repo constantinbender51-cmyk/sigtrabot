@@ -54,12 +54,15 @@ async function runTradingCycle() {
             log.info(`Position already open for ${FUTURES_TRADING_PAIR}. Skipping new trade.`);
             return;
         }
-        if (_tradeNr == 0) { _initiialMrgn = marketData.accountBalance; log.metric('_initialMrgn', _initialMrgn); } else { _newMrgn = marketData.accountBalance; }
-        const pnl = _newMrgn - _initialMrgn;
-        const percGain = pnl * 100 / _initialMrgn;
-        log.metric('_newMrgn', _newMrgn);
-        log.metric('pnl', pnl, '$');
-        log.metric('percentage gain', percGain, '%');
+        // ALWAYS emit balance and signal count
+log.metric('account_balance', marketData.balance, 'USD');
+log.metric('signal_nr', _signalNr);
+
+// emit PnL only after the first trade
+const pnl = _tradeNr === 0 ? 0 : marketData.accountBalance - _initialMrgn;
+const perc = _tradeNr === 0 ? 0 : (pnl * 100) / _initialMrgn;
+log.metric('pnl', pnl, 'USD');
+log.metric('perc_gain', perc, '%');
         // Generate and act on signal
         const tradingSignal = await strategyEngine.generateSignal(marketData);
         _signalNr++;
