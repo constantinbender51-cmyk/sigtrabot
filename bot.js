@@ -83,13 +83,11 @@ log.metric('realised_pnl_last100',  stats.realisedPnL, 'USD');
 log.metric('win_rate_last100',      stats.totalCloses ? (stats.winCount / stats.totalCloses) : 0, '%');
 
 // 4. average trade
-const avgTrade = numFills ? realisedPnL / numFills : 0;
+const avgTrade = numFills ? stats.realisedPnL / numFills : 0;
 
 /* ---- emit ---- */
 log.metric('fills_last100',        numFills,   'fills');
 log.metric('usd_volume_last100',   usdVolume,  'USD');
-log.metric('realised_pnl_last100', realisedPnL,'USD');
-log.metric('win_rate_last100',     winRate,    '%');
 log.metric('avg_trade_last100',    avgTrade,   'USD');
         
         const openPositions = marketData.positions?.openPositions?.filter(p => p.symbol === FUTURES_TRADING_PAIR) || [];
