@@ -77,10 +77,12 @@ let openCost = 0;         // running cost basis
 
 // 3. win-rate (wins = sells with positive PnL)
 
-const stats = await dataHandler.realisedPnlStatsFromFills(fills);
+const stats = await dataHandler.realizedPnlStatsFromFills(fills);
 
-log.metric('realised_pnl_last100',  stats.realisedPnL, 'USD');
-log.metric('win_rate_last100',      stats.totalCloses ? (stats.winCount / stats.totalCloses) : 0, '%');
+log.metric('realised_pnl_last100', stats.realisedPnL, 'USD');
+log.metric('win_rate_last100',
+           stats.totalCloses ? (stats.winCount / stats.totalCloses) : 0,
+           '%');
 
 // 4. average trade
 const avgTrade = numFills ? stats.realisedPnL / numFills : 0;
