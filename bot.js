@@ -7,8 +7,6 @@ import { RiskManager } from './riskManager.js';
 import { ExecutionHandler } from './executionHandler.js';
 import { log } from './logger.js';
 import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
 
 dotenv.config();
 startWebServer();
@@ -19,7 +17,6 @@ const OHLC_DATA_PAIR = 'XBTUSD';
 const CANDLE_INTERVAL = 60;
 const MINIMUM_CONFIDENCE_THRESHOLD = 40;
 const TRADING_INTERVAL_MS = 3600 * 1000; // 1 hour
-let apiCallCount = 0;
 
 /**
  * The main trading logic for a single cycle.
@@ -92,59 +89,6 @@ if (tradeParams) {
         log.warn("Trade execution skipped by Risk Manager.");
     }
 }
-
-        // --------  STATS  --------
-// marketData.recentFills is an ARRAY of fills
-const allTrades      = Array.isArray(marketData.recentFills)
-                        ? marketData.recentFills
-                        : [];                     // defensive
-const totalTrades    = allTrades.length;
-const winningTrades  = allTrades.filter(t => t.pnl > 0).length;
-const losingTrades   = totalTrades - winningTrades;
-const winRate        = totalTrades ? (winningTrades / totalTrades) * 100 : 0;
-const finalBalance   = marketData.accountBalance;
-const totalPnl       = finalBalance - INITIAL_BALANCE;
-
-console.log('\n\n--- Performance Summary ---');
-        console.log(JSON.stringify(allTrades, null, 2));
-console.log(`Initial Balance : $${INITIAL_BALANCE}`);
-console.log(`Final Balance   : $${finalBalance}`);
-console.log(`Total P&L       : $${totalPnl}`);
-console.log(`Total Trades    : ${totalTrades}`);
-console.log(`Winning Trades  : ${winningTrades}`);
-console.log(`Losing Trades   : ${losingTrades}`);
-console.log(`Win Rate        : ${winRate}%`);
-console.log('-----------------------------\n');
-
-if (totalTrades > 0) {
-  console.log('--- Trade Log ---');
-  allTrades.forEach((t, i) =>
-    console.log(`#${i+1}: ${t.signal || t.side} | P&L: $${t.pnl.toFixed(2)} | Reason: ${t.reason || 'n/a'}`)
-  );
-  console.log('-----------------\n');
-}
-
-// Persist for web viewer
-fs.writeFileSync(
-  path.join(process.cwd(), 'logs', 'stats.json'),
-  JSON.stringify(
-    {
-      apiCallCount,
-      initialBalance: INITIAL_BALANCE,
-      finalBalance,
-      totalPnl,
-      totalTrades,
-      winningTrades,
-      losingTrades,
-      winRate,
-      trades: allTrades
-    },
-    null,
-    2
-  )
-);
-apiCallCount++;
-        
     } catch (error) {
         log.error("A critical error occurred during the trading cycle:", error);
     } finally {
