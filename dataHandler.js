@@ -113,7 +113,7 @@ export class DataHandler {
     }
     /* ---------- FIFO realised-PnL calculator ---------- */
 
-async realisedPnlStatsFromFills(fills) {
+async realizedPnlStatsFromFills(fills) {
   const queue = [];          // { side, size, price }
   let realisedPnL = 0;
   let winCount = 0;
