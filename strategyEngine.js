@@ -98,9 +98,9 @@ export class StrategyEngine {
     log.error(`--- ERROR HANDLING AI RESPONSE ---`);
     log.error(`This error was caught gracefully. The backtest will continue.`);
     log.error(`Full API Result Object Was: \n${JSON.stringify(strategistResult, null, 2)}`);
-+
-+   // Print the HTTP-level error body that Gemini sent back
-+   log.error(`Gemini API rejected the request:`, JSON.stringify(error.response, null, 2));
+ 
+    // Print the HTTP-level error body that Gemini sent back
+    log.error(`Gemini API rejected the request:`, JSON.stringify(error.response, null, 2));
 
     log.error(`Error Details:`, error.message);
     log.error(`------------------------------------`);
