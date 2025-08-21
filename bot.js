@@ -52,13 +52,13 @@ async function runTradingCycle() {
         const riskManager = new RiskManager({ leverage: 10,
     stopLossMultiplier: 2,
     takeProfitMultiplier: 3,
-    marginBuffer: 0.3 });
+    marginBuffer: 0.25 });
         const executionHandler = new ExecutionHandler(dataHandler.api);
         // Fetch data
         const marketData = await dataHandler.fetchAllData(OHLC_DATA_PAIR, CANDLE_INTERVAL);
         
         const openPositions = marketData.positions?.openPositions?.filter(p => p.symbol === FUTURES_TRADING_PAIR) || [];
-        log.metric('open_positions', openPositions);
+        log.metric('open_positions', openPositions.lenght);
 /* 1. very first flat cycle → capture baseline */
 if (_initialBalance === null && openPositions.length === 0) {
   _initialBalance = marketData.balance;
