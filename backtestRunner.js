@@ -53,19 +53,24 @@ export class BacktestRunner {
     }
 
     _checkTradeExit(currentCandle, openTrade) {
-        let exitPrice = null;
-        let exitReason = '';
-        if (openTrade.signal === 'LONG') {
-            if (currentCandle.low <= openTrade.stopLoss) { exitPrice = openTrade.stopLoss; exitReason = 'Stop-Loss'; }
-            else if (currentCandle.high >= openTrade.takeProfit) { exitPrice = openTrade.takeProfit; exitReason = 'Take-Profit'; }
-        } else if (openTrade.signal === 'SHORT') {
-            if (currentCandle.high >= openTrade.stopLoss) { exitPrice = openTrade.stopLoss; exitReason = 'Stop-Loss'; }
-            else if (currentCandle.low <= openTrade.takeProfit) { exitPrice = openTrade.takeProfit; exitReason = 'Take-Profit'; }
-        }
-        if (exitPrice) {
-            this.executionHandler.closeTrade(openTrade, exitPrice, currentCandle.timestamp);
-        }
+    let exitPrice = null;
+    let exitReason = '';
+
+    if (openTrade.signal === 'LONG') {
+        if (currentCandle.low <= openTrade.stopLoss)      { exitPrice = openTrade.stopLoss; exitReason = 'Stop-Loss'; }
+        else if (currentCandle.high >= openTrade.takeProfit){ exitPrice = openTrade.takeProfit; exitReason = 'Take-Profit'; }
+    } else if (openTrade.signal === 'SHORT') {
+        if (currentCandle.high >= openTrade.stopLoss)     { exitPrice = openTrade.stopLoss; exitReason = 'Stop-Loss'; }
+        else if (currentCandle.low <= openTrade.takeProfit) { exitPrice = openTrade.takeProfit; exitReason = 'Take-Profit'; }
     }
+
+    if (exitPrice) {
+        const date = new Date(currentCandle.timestamp * 1000).toISOString(); // seconds→ms
+        log.info(`[EXIT] [${date}] ${exitReason} triggered for ${openTrade.signal} @ ${exitPrice}`);
+        this.executionHandler.closeTrade(openTrade, exitPrice, currentCandle.timestamp);
+    }
+}
+
 
     _checkForSignal(marketData) {
     const LOOKBACK_PERIOD = 20; // A common period for breakout strategies
