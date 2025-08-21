@@ -50,7 +50,7 @@ export class StrategyEngine {
         return `
             You are an expert quantitative strategist and risk manager for the PF_XBTUSD market.
             Your ONLY job is to produce a single JSON object that defines a complete trade plan.
-
+            
             **Provided Market Data:**
             You have been provided with the last 720 1-hour OHLC candles and their corresponding indicator series.
             ${dataPayload}
