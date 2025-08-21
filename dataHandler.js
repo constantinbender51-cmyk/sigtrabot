@@ -111,4 +111,43 @@ export class DataHandler {
         console.log(`Successfully fetched ${data.fills?.length || 0} recent fills.`);
         return data;
     }
+    /* ---------- FIFO realised-PnL calculator ---------- */
+async function realisedPnlFromFills(fills) {
+  const queue = [];          // { side, size, price }  (longs only)
+  let realised = 0;
+
+  for (const f of fills) {
+    let { side, size, price } = f;     // size is always positive
+    size = side === 'sell' ? -size : +size; // signed qty
+
+    while (size !== 0 && queue.length) {
+      const head = queue[0];
+      const headQty = head.side === 'buy' ? head.size : -head.size; // signed
+      const matchQty = Math.min(Math.abs(size), Math.abs(headQty));
+
+      const closeSide = size > 0 ? 'buy' : 'sell'; // direction of *this* trade
+      const openSide  = headQty > 0 ? 'buy' : 'sell';
+
+      // Only count when signs differ (closing a position)
+      if (closeSide !== openSide) {
+        realised += (price - head.price) * (size > 0 ? 1 : -1) * matchQty;
+      }
+
+      // Adjust remaining sizes
+      if (Math.abs(headQty) === matchQty) {
+        queue.shift();
+      } else {
+        head.size -= matchQty * Math.sign(headQty);
+      }
+      size -= matchQty * Math.sign(size);
+    }
+
+    if (size !== 0) {
+      // leftover opens a new leg
+      queue.push({ side: size > 0 ? 'buy' : 'sell', size: Math.abs(size), price });
+    }
+  }
+  return realised;
+}
+    
 }
