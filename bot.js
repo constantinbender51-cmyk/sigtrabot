@@ -52,7 +52,7 @@ async function runTradingCycle() {
         const riskManager = new RiskManager({ leverage: 10,
     stopLossMultiplier: 2,
     takeProfitMultiplier: 3,
-    marginBuffer: 0.25 });
+    marginBuffer: 0.05});
         const executionHandler = new ExecutionHandler(dataHandler.api);
         // Fetch data
         const marketData = await dataHandler.fetchAllData(OHLC_DATA_PAIR, CANDLE_INTERVAL);
