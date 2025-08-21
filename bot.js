@@ -66,7 +66,7 @@ async function runTradingCycle() {
 log.metric('account_balance', marketData.balance, 'USD');
 /* ---- derive metrics from fills ---- */
 // right after const fills = marketData.fills || [];
-const fills = marketData.fills?.slice(-2) || [];   // only last 2
+const fills = marketData.fills?.slice(-6) in || [];   // only last 2
 
 
 // 1. basic counts / volume
