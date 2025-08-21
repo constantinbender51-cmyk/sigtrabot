@@ -67,9 +67,6 @@ log.metric('account_balance', marketData.balance, 'USD');
 /* ---- derive metrics from fills ---- */
 const fills = marketData.fills || [];
 
-        const realisedPnL = await dataHandler.realisedPnlFromFills(fills);
-log.metric('realised_pnl_last100', realisedPnL, 'USD');
-        
 // 1. basic counts / volume
 const numFills  = fills.length;
 const usdVolume = fills.reduce((sum, f) => sum + f.price * f.size, 0);
@@ -79,12 +76,11 @@ let openBtc = 0;          // running inventory
 let openCost = 0;         // running cost basis
 
 // 3. win-rate (wins = sells with positive PnL)
-const sells = fills.filter(f => f.side === 'sell');
-const winners = sells.filter(f => {
-  const avgCost = openCost / openBtc; // cost at time of this sell
-  return f.price > avgCost;
-}).length;
-const winRate = sells.length ? winners / sells.length : 0;
+
+const stats = await dataHandler.realisedPnlStatsFromFills(fills);
+
+log.metric('realised_pnl_last100',  stats.realisedPnL, 'USD');
+log.metric('win_rate_last100',      stats.totalCloses ? (stats.winCount / stats.totalCloses) : 0, '%');
 
 // 4. average trade
 const avgTrade = numFills ? realisedPnL / numFills : 0;
