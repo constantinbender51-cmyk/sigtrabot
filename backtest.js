@@ -22,12 +22,7 @@ async function main() {
         const runner = new BacktestRunner(config);
         await runner.run();
     } catch (error) {
-        log.error("A critical error occurred during the backtest process:", error.stack || error);
-
-       // If the Gemini SDK threw a response error, also log the JSON body
-       if (error.response) {
-           log.error("Gemini API response:", JSON.stringify(error.response, null, 2));
-       }
+        log.error("A critical error occurred during the backtest process:", error);
     }
 }
 
