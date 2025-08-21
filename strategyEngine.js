@@ -10,7 +10,7 @@ export class StrategyEngine {
             category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
             threshold: HarmBlockThreshold.BLOCK_NONE,
         }];
-        this.model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite", safetySettings });
+        this.model = genAI.getGenerativeModel({ model: "gemini-2.5-pro", safetySettings });
         log.info("StrategyEngine V3 initialized (Full Autonomy).");
     }
 
