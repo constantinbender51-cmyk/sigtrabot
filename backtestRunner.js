@@ -159,3 +159,4 @@ export class BacktestRunner {
             console.log("-----------------\n");
         }
     }
+}
