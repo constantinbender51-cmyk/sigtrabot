@@ -115,7 +115,37 @@ export class KrakenFuturesApi {
     getOpenOrders = () => this._request('GET', '/derivatives/api/v3/openorders');
     getOpenPositions = () => this._request('GET', '/derivatives/api/v3/openpositions');
     getRecentOrders = (params) => this._request('GET', '/derivatives/api/v3/recentorders', params);
-    getFills = (params) => this._request('GET', '/derivatives/api/v3/fills', params);
+    /**
+ * Get executed fills/trades.
+ * @param {Object} [params={}] - Optional filters (e.g. { lastFillTime: 1625097600000 }).
+ * @returns {Promise<Array>}   - Array of fill objects.
+ */
+async getFills(params = {}) {
+  const endpoint = '/derivatives/api/v3/fills';
+  const query    = new URLSearchParams(params).toString();   // ?foo=bar&baz=qux
+  const nonce    = this._createNonce();
+
+  // Kraken expects the *exact* query string (if any) in the signature
+  const signature = this._signRequest(endpoint, nonce, query);
+
+  const url = `${this.baseUrl}${endpoint}${query ? `?${query}` : ''}`;
+  const headers = {
+    'APIKey':  this.apiKey,
+    'Nonce':   nonce,
+    'Authent': signature,
+    'User-Agent': 'TradingBot/1.0'
+  };
+
+  try {
+    const { data } = await axios.get(url, { headers });
+    if (data.error) throw new Error(data.error.join(', '));
+    return data.fills || data;   // endpoint returns { fills: [...] }
+  } catch (err) {
+    console.error('getFills() failed:', err.response?.data || err.message);
+    throw err;
+  }
+}
+
     getTransfers = (params) => this._request('GET', '/derivatives/api/v3/transfers', params);
     getNotifications = () => this._request('GET', '/derivatives/api/v3/notifications');
 
