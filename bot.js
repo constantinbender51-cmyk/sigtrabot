@@ -62,9 +62,6 @@ async function runTradingCycle() {
         const marketData = await dataHandler.fetchAllData(OHLC_DATA_PAIR, CANDLE_INTERVAL);
         //log.metric()
         // bot.js  (inside runTradingCycle, after fetchAllData resolves)
-
-const marketData = await dataHandler.fetchAllData(OHLC_DATA_PAIR, CANDLE_INTERVAL);
-
 /* ---- account snapshot ---- */
 log.metric('account_balance', marketData.balance, 'USD');
 
