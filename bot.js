@@ -54,9 +54,6 @@ async function runTradingCycle() {
         const marketData = await dataHandler.fetchAllData(OHLC_DATA_PAIR, CANDLE_INTERVAL);
         
         const openPositions = marketData.positions?.openPositions?.filter(p => p.symbol === FUTURES_TRADING_PAIR) || [];
-        // ---- inside runTradingCycle, right after fetchAllData ----
-const openPositions = marketData.positions?.openPositions?.filter(p => p.symbol === FUTURES_TRADING_PAIR) || [];
-
 /* 1. very first flat cycle → capture baseline */
 if (_initialBalance === null && openPositions.length === 0) {
   _initialBalance = marketData.accountBalance;
