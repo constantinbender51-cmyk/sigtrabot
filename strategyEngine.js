@@ -95,18 +95,15 @@ export class StrategyEngine {
             return signalData;
 
         } catch (error) {
-    log.error(`--- ERROR HANDLING AI RESPONSE ---`);
-    log.error(`This error was caught gracefully. The backtest will continue.`);
-    log.error(`Full API Result Object Was: \n${JSON.stringify(strategistResult, null, 2)}`);
- 
-    // Print the HTTP-level error body that Gemini sent back
-    log.error(`Gemini API rejected the request:`, JSON.stringify(error.response, null, 2));
+    // 1. Make sure we always see the original Gemini message
+    const geminiMsg = error?.response?.error?.message || error.message;
+    log.error(`Gemini API error: ${geminiMsg}`);
+    log.error(`Full error object:`, JSON.stringify(error, null, 2));
 
-    log.error(`Error Details:`, error.message);
-    log.error(`------------------------------------`);
-
-    return { signal: 'HOLD', confidence: 0, reason: 'Failed to get a valid signal from the AI model.', stop_loss_distance_in_usd: 0, take_profit_distance_in_usd: 0 };
+    // 2. Propagate the exception so the outer handler can see it
+    throw error;          // ← this is the missing step
 }
+
 
     }
 }
