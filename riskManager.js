@@ -41,7 +41,7 @@ export class RiskManager {
         // --- Position Sizing (remains the same) ---
         const riskPerUnit = stop_loss_distance_in_usd;
         const totalCapitalToRisk = balance * 0.02; // Still risking 2% of capital per trade
-        const sizeInUnits = totalCapitalToRisk / riskPerUnit;
+        let sizeInUnits = totalCapitalToRisk / riskPerUnit;
         const positionValueUSD = sizeInUnits * lastPrice;
         const marginRequired = (positionValueUSD / this.leverage) * (1 + this.marginBuffer);
 
@@ -51,6 +51,7 @@ export class RiskManager {
         }
         if (sizeInUnits < 0.0001) {
             log.warn(`[RISK] Size = 0. Required: 0.0001`);
+            sizeInUnits = 0.0001;
             return null;
         }
 
