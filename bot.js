@@ -18,6 +18,8 @@ const CANDLE_INTERVAL = 60;
 const MINIMUM_CONFIDENCE_THRESHOLD = 40;
 const TRADING_INTERVAL_MS = 3600 * 1000; // 1 hour
 
+let _signalNr = 0; let _tradeNr = 0; let _initialMrgn, _newMrgn = 0; 
+
 /**
  * The main trading logic for a single cycle.
  */
@@ -44,7 +46,6 @@ async function runTradingCycle() {
     takeProfitMultiplier: 3,
     marginBuffer: 0.4 });
         const executionHandler = new ExecutionHandler(dataHandler.api);
-        let _signalNr = 0; let _tradeNr = 0;
         // Fetch data
         const marketData = await dataHandler.fetchAllData(OHLC_DATA_PAIR, CANDLE_INTERVAL);
         
@@ -53,7 +54,12 @@ async function runTradingCycle() {
             log.info(`Position already open for ${FUTURES_TRADING_PAIR}. Skipping new trade.`);
             return;
         }
-
+        if (_tradeNr == 0) { _initiialMrgn = marketData.accountBalance; log.metric('_initialMrgn', _initialMrgn); } else { _newMrgn = marketData.accountBalance; }
+        const pnl = _newMrgn - _initialMrgn;
+        const percGain = pnl * 100 / _initialMrgn;
+        log.metric('_newMrgn', _newMrgn);
+        log.metric('pnl', pnl, '$');
+        log.metric('percentage gain', percGain, '%');
         // Generate and act on signal
         const tradingSignal = await strategyEngine.generateSignal(marketData);
         _signalNr++;
