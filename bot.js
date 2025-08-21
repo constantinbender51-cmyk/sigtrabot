@@ -85,6 +85,9 @@ if (tradeParams) {
         params: tradeParams,
         lastPrice: lastPrice 
     });
+    //log.metrics()
+    log.metric('_pair', FUTURES_TRADING_PAIR);
+    log.metric('_interval', CANDLE_INTERVAL);
 } else {
         log.warn("Trade execution skipped by Risk Manager.");
     }
