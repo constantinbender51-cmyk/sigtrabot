@@ -58,20 +58,37 @@ export class StrategyEngine {
                 indicators: indicatorSeries // The full indicator series
             };
             // --- STEP 3: MAKE STRATEGIC DECISION WITH AI ---
-            const strategistPrompt = this._createPrompt(contextualData);
-            log.info("Generating signal with FULL 720-candle context...");
-            const strategistResult = await this.model.generateContent(strategistPrompt);
-            responseText = strategistResult.response.text();
-
-            // --- FIX 1: ALWAYS LOG THE RAW RESPONSE ---
-            // This will help us debug empty or strange responses.
-            log.info(`[GEMINI_RAW_RESPONSE]:\n---\n${responseText}\n---`);
-
-            // --- FIX 2: ADD ROBUST PARSING AND VALIDATION ---
-            // Check if the response is empty or too short to be valid JSON
-            if (!responseText || responseText.length < 10) {
-                throw new Error("Received an empty or invalid response from the AI.");
+    
+    /* continue parsing ... */
+} catch (error) {
+    /* NEW: print the *original* SDK error structure */
+    log.error("Caught in generateSignal", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        response: error.response             // ← GoogleGenerativeAIResponseError puts it here
+    });
+    throw error;  // let the back-test die so you see everything in one place
             }
+            const strategistPrompt = this._createPrompt(contextualData);
+            /* -------- NEW: dump the whole SDK envelope -------- */
+    log.info(
+        "[GEMINI_SDK_RESULT]:\n" +
+        JSON.stringify(strategistResult, null, 2)
+    );
+    /* -------------------------------------------------- */
+
+    responseText = strategistResult.response?.text?.() ?? "";
+    log.info(`[GEMINI_RAW_RESPONSE]:\n---\n${responseText}\n---`);
+
+    if (!responseText.trim()) {
+        // Now we can also inspect the HTTP metadata
+        const metadata = strategistResult.response?.response; // underlying fetch Response
+        const status   = metadata?.status;
+        const headers  = Object.fromEntries(metadata?.headers ?? []);
+        log.error(`Empty body received. HTTP status=${status}`, { headers });
+        throw new Error(`Gemini returned HTTP ${status} with empty body`);
+    }
 
             // Use a more resilient method to find the JSON block
             const jsonMatch = responseText.match(/\{.*\}/s);
@@ -95,15 +112,13 @@ export class StrategyEngine {
             return signalData;
 
         } catch (error) {
-    // 1. Make sure we always see the original Gemini message
-    const geminiMsg = error?.response?.error?.message || error.message;
-    log.error(`Gemini API error: ${geminiMsg}`);
-    log.error(`Full error object:`, JSON.stringify(error, null, 2));
-
-    // 2. Propagate the exception so the outer handler can see it
-    throw error;          // ← this is the missing step
+    /* NEW: print the *original* SDK error structure */
+    log.error("Caught in generateSignal", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        response: error.response             // ← GoogleGenerativeAIResponseError puts it here
+    });
+    throw error;  // let the back-test die so you see everything in one place
 }
 
-
-    }
-}
