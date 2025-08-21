@@ -20,7 +20,11 @@ const TRADING_INTERVAL_MS = 3600 * 1000; // 1 hour
 
 let _signalNr = 0; let _tradeNr = 0; let _initialMrgn, _newMrgn = 0; const _tradePnLs = []; // ---- state variables (top of bot.js) ----
 let _initialBalance = null;   // first balance when flat
-let _lastTradeBalance = null; // balance right after the last trade closed
+let _lastTradeBalance = null;
+// each closed-trade PnL
+
+// inside the “position just closed” block
+// balance right after the last trade closed
 // push each trade’s PnL
 
 
@@ -64,11 +68,21 @@ if (_initialBalance === null && openPositions.length === 0) {
 
 /* 2. position just closed (was open last cycle, now flat) */
 if (_lastTradeBalance !== null && openPositions.length === 0) {
-  const pnl   = marketData.balance - _initialBalance;
-  const perc  = (pnl / _initialBalance) * 100;
-  log.metric('realised_pnl', pnl, 'USD');
-  log.metric('perc_gain', perc, '%');
-  _lastTradeBalance = null;          // reset for next round
+  const pnlUSD  = marketData.balance - _initialBalance;
+  const perc    = (pnlUSD / _initialBalance) * 100;
+  _tradePnLs.push(pnlUSD);
+
+  const wins        = _tradePnLs.filter(p => p > 0).length;
+  const winRate     = _tradePnLs.length ? (wins / _tradePnLs.length) : 0;
+  const avgTradeUSD = _tradePnLs.length ? (_tradePnLs.reduce((a, b) => a + b, 0) / _tradePnLs.length) : 0;
+
+  log.metric('realised_pnl',   pnlUSD, 'USD');
+  log.metric('perc_gain',      perc, '%');
+  log.metric('trade_count',    _tradePnLs.length, 'trades');
+  log.metric('win_rate',       winRate, '%');
+  log.metric('avg_trade_usd',  avgTradeUSD, 'USD');
+
+  _lastTradeBalance = null;   // ready for next round
 }
 
 /* 3. new trade placed (flat → open) */
