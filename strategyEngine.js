@@ -14,7 +14,7 @@ export class StrategyEngine {
         log.info("StrategyEngine V3 initialized (Full Autonomy).");
     }
 
-    /* --------------  NEW RETRY HELPER  -------------- */
+        /* --------------  RETRY HELPER (61 s fixed delay) -------------- */
     async _callWithRetry(prompt, maxAttempts = 4) {
         let lastError;
 
@@ -31,17 +31,18 @@ export class StrategyEngine {
                 return { ok: true, text, fullResult: result };
             } catch (err) {
                 lastError = err;
-                const delay = Math.pow(2, attempt) * 1000 + Math.random() * 500;
-                log.warn(`[GEMINI] Attempt ${attempt} failed: ${err.message}. Retrying in ${delay} ms …`);
+
+                // FIXED 61-second pause between retries
+                const delay = 61_000;
+                log.warn(`[GEMINI] Attempt ${attempt} failed: ${err.message}. Retrying in ${delay / 1000}s …`);
                 await new Promise(r => setTimeout(r, delay));
             }
         }
 
-        // All retries exhausted
         log.error(`[GEMINI] All ${maxAttempts} attempts failed. Giving up.`);
         return { ok: false, error: lastError };
     }
-    /* -------------------------------------------------- */
+    /* -------------------------------------------------------------- */
 
     _createPrompt(contextualData) {
         const dataPayload = JSON.stringify(contextualData, null, 2);
