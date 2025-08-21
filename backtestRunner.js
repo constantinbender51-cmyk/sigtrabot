@@ -83,7 +83,7 @@ export class BacktestRunner {
     
 
     _checkForSignal(marketData) {
-    const LOOKBACK = 960;
+    const LOOKBACK = 200;
     const MIN_ATR_MULT = 1.2;
     const MIN_ADR_PCT  = 0.005;
 
