@@ -60,6 +60,11 @@ async function runTradingCycle() {
         //TEST_RUN: FINISH 
         // Fetch data
         const marketData = await dataHandler.fetchAllData(OHLC_DATA_PAIR, CANDLE_INTERVAL);
+        //log.metric()
+        log.metric('',);
+        log.metric('',);
+        log.metric('',);
+        log.metric('',);
         
         const openPositions = marketData.positions?.openPositions?.filter(p => p.symbol === FUTURES_TRADING_PAIR) || [];
         if (openPositions.length > 0) {
