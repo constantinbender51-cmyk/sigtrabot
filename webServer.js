@@ -6,37 +6,6 @@ import { log } from './logger.js';
 const PORT = process.env.PORT || 3000;
 const logFilePath = path.join(process.cwd(), 'logs', 'trading-bot.log');
 
-// --- tiny helper --------------------------------------------------
-function parseLogForPerformance() {
-  if (!fs.existsSync(logFilePath)) return { cycles: [] };
-
-  const text = fs.readFileSync(logFilePath, 'utf8');
-  const lines = text.split('\n');
-
-  const cycles = [];
-  let cur = null;
-
-  for (const ln of lines) {
-    if (ln.includes('Bot trading cycle starting')) {
-      cur = { balance: null, pnl: 0 };
-    }
-    if (!cur) continue;
-
-    const balMatch = ln.match(/INITIAL_BALANCE[:=]?\s*(\d*\.?\d+)/);
-    if (balMatch) cur.balance = parseFloat(balMatch[1]);
-
-    const pnlMatch = ln.match(/Realised PnL[:=]?\s*([+-]?\d*\.?\d+)/);
-    if (pnlMatch) cur.pnl += parseFloat(pnlMatch[1]);
-
-    if (ln.includes('Bot trading cycle finished')) {
-      cycles.push(cur);
-      cur = null;
-    }
-  }
-  return { cycles };
-}
-// -----------------------------------------------------------------
-
 export function startWebServer() {
   const app = express();
 
