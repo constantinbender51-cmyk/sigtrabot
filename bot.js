@@ -106,13 +106,13 @@ const finalBalance   = marketData.accountBalance;
 const totalPnl       = finalBalance - INITIAL_BALANCE;
 
 console.log('\n\n--- Performance Summary ---');
-console.log(`Initial Balance : $${INITIAL_BALANCE.toFixed(2)}`);
-console.log(`Final Balance   : $${finalBalance.toFixed(2)}`);
-console.log(`Total P&L       : $${totalPnl.toFixed(2)}`);
+console.log(`Initial Balance : $${INITIAL_BALANCE}`);
+console.log(`Final Balance   : $${finalBalance}`);
+console.log(`Total P&L       : $${totalPnl}`);
 console.log(`Total Trades    : ${totalTrades}`);
 console.log(`Winning Trades  : ${winningTrades}`);
 console.log(`Losing Trades   : ${losingTrades}`);
-console.log(`Win Rate        : ${winRate.toFixed(2)}%`);
+console.log(`Win Rate        : ${winRate}%`);
 console.log('-----------------------------\n');
 
 if (totalTrades > 0) {
