@@ -93,12 +93,12 @@ export class BacktestRunner {
     const isBearishBreakout = currentCandle.low < lowestLow;
 
     if (isBullishBreakout) {
-        const date = new Date(currentCandle.timestamp).toISOString();
+        const date = new Date(currentCandle.timestamp * 1000).toISOString();
         log.info(`[FILTER] [${date}] Potential signal found: Bullish Breakout above ${highestHigh}.`);
         return true;
     }
     if (isBearishBreakout) {
-        const date = new Date(currentCandle.timestamp).toISOString();
+        const date = new Date(currentCandle.timestamp * 1000).toISOString();
         log.info(`[FILTER] [${date}] Potential signal found: Bearish Breakout below ${lowestLow}.`);
         return true;
     }
