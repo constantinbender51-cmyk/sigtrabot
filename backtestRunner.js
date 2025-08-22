@@ -7,6 +7,9 @@ import { StrategyEngine } from './strategyEngine.js';
 import { RiskManager } from './riskManager.js';
 import { BacktestExecutionHandler } from './backtestExecutionHandler.js';
 
+const BLOCK_DIR = './block-reports';   // module-wide
+if (!fs.existsSync(BLOCK_DIR)) fs.mkdirSync(BLOCK_DIR, { recursive: true });
+
 /* ------------------------------------------------------------------ */
 /*  Utilities                                                         */
 /* ------------------------------------------------------------------ */
@@ -107,9 +110,6 @@ export class BacktestRunner {
     this.exec  = new BacktestExecutionHandler(cfg.INITIAL_BALANCE);
     this.strat = new StrategyEngine();
     this.risk  = new RiskManager({ leverage: 10, marginBuffer: 0.01 });
-
-    const BLOCK_DIR = './block-reports';
-    if (!fs.existsSync(BLOCK_DIR)) fs.mkdirSync(BLOCK_DIR, { recursive: true });
     log.info('BacktestRunner initialized.');
   }
 
@@ -282,7 +282,6 @@ async function emitBlockReportIfNeeded(allClosedTrades, cfg) {
       report = JSON.parse(text.match(/\{.*\}/s)[0]);
     } catch {}
   }
-  if (!fs.existsSync(BLOCK_DIR)) fs.mkdirSync(BLOCK_DIR, { recursive: true });
   const file = path.join(BLOCK_DIR, `${allClosedTrades.length}.json`);
   fs.writeFileSync(file, JSON.stringify(report, null, 2));
   log.info(`[BLOCK REPORT] saved → ${file}`);
