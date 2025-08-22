@@ -16,6 +16,17 @@ function calculateATR(ohlc, period = 14) {
     const atrWindow = tr.slice(-period);
     return atrWindow.reduce((a, b) => a + b, 0) / atrWindow.length;
 }
+// ---------- date helpers ----------
+function tsFromDate(dateStr) {
+  // "YYYY-MM-DD" -> Unix seconds
+  return Math.floor(new Date(dateStr).getTime() / 1000);
+}
+
+function filterByDate(candles, startDateStr, endDateStr) {
+  const startTs = tsFromDate(startDateStr);
+  const endTs   = tsFromDate(endDateStr);
+  return candles.filter(c => c.timestamp >= startTs && c.timestamp < endTs);
+}
 
 // --- FIX: Added export statement ---
 export class BacktestRunner {
@@ -31,7 +42,8 @@ export class BacktestRunner {
     async run() {
         log.info('--- STARTING NEW BACKTEST (WITH MA FILTER) ---');
         
-        const allCandles = this.dataHandler.getAllCandles();
+        let allCandles = this.dataHandler.getAllCandles();
+        allCandles = filterByDate(allCandles, '2022-01-01', '2025-02-01');  // <- NEW
         if (!allCandles || allCandles.length < this.config.WARMUP_PERIOD) {
             throw new Error("Not enough data for the warm-up period.");
         }
@@ -40,6 +52,10 @@ export class BacktestRunner {
 
         for (let i = this.config.WARMUP_PERIOD; i < allCandles.length; i++) {
             const currentCandle = allCandles[i];
+                // --- NEW: print the candle’s human-readable date ---
+            const dateStr = new Date(currentCandle.timestamp * 1000).toISOString();
+            log.info(`[CANDLE] ${dateStr}`);
+            
             const marketData = { ohlc: allCandles.slice(i - this.config.DATA_WINDOW_SIZE, i) };
 
             const openTrade = this.executionHandler.getOpenTrade();
