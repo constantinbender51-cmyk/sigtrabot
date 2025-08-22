@@ -50,8 +50,7 @@ export class StrategyEngine {
         return `
             You are an expert quantitative strategist and risk manager for the PF_XBTUSD market.
             Your ONLY job is to produce a single JSON object that defines a complete trade plan.
-            You will be asked every 60 minutes to to perform this task until an order is placed and it will be waited, until either the stoploss or takeprofit orders are triggered.
-            Correction: You will be asked every 120 hours; this is a test run.
+            You will be asked every 120 hours to to perform this task until an order is placed and it will be waited, until either the stoploss or takeprofit orders are triggered.
             
             **Provided Market Data:**
             You have been provided with the last 720 1-hour OHLC candles and their corresponding indicator series.
