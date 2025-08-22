@@ -43,7 +43,7 @@ export class BacktestRunner {
         log.info('--- STARTING NEW BACKTEST (WITH MA FILTER) ---');
         
         let allCandles = this.dataHandler.getAllCandles();
-        allCandles = filterByDate(allCandles, '2022-01-01', '2025-02-01');  // <- NEW
+        allCandles = filterByDate(allCandles, '2022-01-01', '2022-05-01');  // <- NEW
         if (!allCandles || allCandles.length < this.config.WARMUP_PERIOD) {
             throw new Error("Not enough data for the warm-up period.");
         }
