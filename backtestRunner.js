@@ -5,6 +5,7 @@ import { log } from './logger.js';
 import { BacktestDataHandler } from './backtestDataHandler.js';
 import { StrategyEngine } from './strategyEngine.js';
 import { RiskManager } from './riskManager.js';
+import fs from 'fs';
 import { BacktestExecutionHandler } from './backtestExecutionHandler.js';
 // --- ATR utility -------------------------------------------------
 function calculateATR(ohlc, period = 14) {
@@ -184,6 +185,8 @@ export class BacktestRunner {
         console.log(`Win Rate:        ${winRate.toFixed(2)}%`);
         console.log("------------------------------------\n");
 
+        fs.writeFileSync('./trades.json', JSON.stringify(allTrades, null, 2));
+        
         if (totalTrades > 0) {
             console.log("--- Trade Log ---");
             allTrades.forEach((trade, index) => {
