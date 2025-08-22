@@ -89,7 +89,7 @@ export class StrategyEngine {
             indicators: indicatorSeries
         };
 
-        const prompt = this._createPrompt(contextualData);
+        const prompt = await this._createPrompt(contextualData);
 
         /* --------------  RETRY-AWARE CALL  -------------- */
         const { ok, text, error } = await this._callWithRetry(prompt);
