@@ -247,33 +247,38 @@ export class BacktestRunner {
         console.log("------------------------------------\n");
 
         fs.writeFileSync('./trades.json', JSON.stringify(allTrades, null, 2));
-// ------------------------------------------------------------------
-//  AI POST-TEST ANALYSIS
-// ------------------------------------------------------------------
-const prompt = buildPostTestPrompt(allTrades, this.config);
+// --- Static-lesson generation + DB write ---
+const prompt = `
+You are a quantitative strategist.
+Given the following back-test results, return ONLY a JSON array of 3 short, actionable lessons (strings) for the next live-run.
 
-// reuse the retry-safe wrapper already in StrategyEngine
+Trade log:
+${JSON.stringify(allTrades, null, 2)}
+
+Summary:
+Initial: $${this.config.INITIAL_BALANCE}  Final: $${finalBalance.toFixed(2)}  Trades: ${allTrades.length}
+`;
+
 const { ok, text } = await new StrategyEngine()._callWithRetry(prompt);
-
 if (ok) {
   try {
-    const report = JSON.parse(text.match(/\{.*\}/s)[0]);
-    console.log("\n--- AI Post-Test Analysis ---");
-    console.log(JSON.stringify(report, null, 2));
+    const lessons = JSON.parse(text.match(/
+ $$.*$$ /s)[0]);
+    await upsertLessons(lessons);
+    console.log('\n--- Lessons saved to DB ---\n', lessons);
   } catch (e) {
-    console.warn("Could not parse AI analysis:", e.message);
+    console.warn('Could not parse lessons JSON', e.message);
   }
 } else {
-  console.warn("AI analysis call failed.");
+  console.warn('Lesson generation failed.');
 }
         
-        
-        if (totalTrades > 0) {
+       /* if (totalTrades > 0) {
             console.log("--- Trade Log ---");
             allTrades.forEach((trade, index) => {
                 console.log(`Trade #${index + 1}: ${trade.signal} | P&L: $${trade.pnl.toFixed(2)} | Reason: ${trade.reason}`);
             });
             console.log("-----------------\n");
-        }
+        }*/
     }
 }
