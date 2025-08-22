@@ -9,22 +9,6 @@ import fs from 'fs';
 import { BacktestExecutionHandler } from './backtestExecutionHandler.js';
 import path from 'path';                 // *** NEW ***
 
-async function emitBlockReportIfNeeded(allClosedTrades, cfg) {
-  const blockSize = 10;
-  if (allClosedTrades.length % blockSize !== 0 || allClosedTrades.length === 0) return;
-
-  const lastBlock = allClosedTrades.slice(-blockSize);
-  const prompt    = buildPostTestPrompt(lastBlock, cfg);
-
-  const { ok, text } = await new StrategyEngine()._callWithRetry(prompt);
-  let report = {};
-  if (ok) try { report = JSON.parse(text.match(/\{.*\}/s)[0]); } catch {}
-
-  if (!fs.existsSync(BLOCK_DIR)) fs.mkdirSync(BLOCK_DIR, { recursive: true });
-  const fileName = path.join(BLOCK_DIR, `${allClosedTrades.length}.json`);
-  fs.writeFileSync(fileName, JSON.stringify(report, null, 2));
-  log.info(`[BLOCK REPORT] saved → ${fileName}`);
-}
 
 // --- ATR utility -------------------------------------------------
 function calculateATR(ohlc, period = 14) {
@@ -306,4 +290,20 @@ if (!fs.existsSync('./block-reports'))  // *** NEW ***
         }
         // -----------------------------------------------------------
     }
+}
+async function emitBlockReportIfNeeded(allClosedTrades, cfg) {
+  const blockSize = 10;
+  if (allClosedTrades.length % blockSize !== 0 || allClosedTrades.length === 0) return;
+
+  const lastBlock = allClosedTrades.slice(-blockSize);
+  const prompt    = buildPostTestPrompt(lastBlock, cfg);
+
+  const { ok, text } = await new StrategyEngine()._callWithRetry(prompt);
+  let report = {};
+  if (ok) try { report = JSON.parse(text.match(/\{.*\}/s)[0]); } catch {}
+
+  if (!fs.existsSync(BLOCK_DIR)) fs.mkdirSync(BLOCK_DIR, { recursive: true });
+  const fileName = path.join(BLOCK_DIR, `${allClosedTrades.length}.json`);
+  fs.writeFileSync(fileName, JSON.stringify(report, null, 2));
+  log.info(`[BLOCK REPORT] saved → ${fileName}`);
 }
