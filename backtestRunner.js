@@ -137,7 +137,7 @@ export class BacktestRunner {
                 }
             }
         }
-        this._printSummary(apiCallCount);
+        await this._printSummary(apiCallCount);
     }
 
     _checkTradeExit(currentCandle, openTrade) {
