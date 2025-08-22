@@ -262,8 +262,7 @@ Initial: $${this.config.INITIAL_BALANCE}  Final: $${finalBalance.toFixed(2)}  Tr
 const { ok, text } = await new StrategyEngine()._callWithRetry(prompt);
 if (ok) {
   try {
-    const lessons = JSON.parse(text.match(/
- $$.*$$ /s)[0]);
+    const lessons = JSON.parse(text.match(/$$.*$$ /s)[0]);
     await upsertLessons(lessons);
     console.log('\n--- Lessons saved to DB ---\n', lessons);
   } catch (e) {
