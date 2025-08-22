@@ -31,54 +31,36 @@ function filterByDate(candles, startDateStr, endDateStr) {
 // ------------------------------------------------------------
 // 1.  Build the prompt (place this in backtestRunner.js)
 // ------------------------------------------------------------
-function buildPostTestPrompt(allTrades, cfg) {
-  // helper – format JS timestamp → ISO
+function buildPostTestPrompt(trades, cfg) {
   const fmt = ts => new Date(ts * 1000).toISOString();
 
-  const enriched = allTrades.map((t, idx) => ({
+  const enriched = trades.map((t, idx) => ({
     index: idx + 1,
     signal: t.signal,
     entryTime: fmt(t.entryTime),
-    exitTime:  fmt(t.exitTime),
+    exitTime:  t.exitTime ? fmt(t.exitTime) : null,
     entryPrice: t.entryPrice,
     exitPrice:  t.exitPrice,
-    size:       t.size,
-    pnl:        t.pnl,
-    pnlPct:     ((t.pnl / t.size / t.entryPrice) * 100).toFixed(2) + '%',
-    reason:     t.reason,
-    stopLoss:   t.stopLoss,
-    takeProfit: t.takeProfit
+    size: t.size,
+    stopLoss: t.stopLoss,
+    takeProfit: t.takeProfit,
+    pnl: t.pnl,
+    reason: t.reason || 'N/A'
   }));
 
-  const initialBalance = cfg.INITIAL_BALANCE;
-  const finalBalance   = allTrades.reduce((b, t) => b + t.pnl, initialBalance);
-  const totalReturn    = finalBalance - initialBalance;
-  const totalTrades    = allTrades.length;
-  const winningTrades  = allTrades.filter(t => t.pnl > 0).length;
-  const losingTrades   = totalTrades - winningTrades;
-  const winRate        = totalTrades ? (winningTrades / totalTrades) * 100 : 0;
+  const initial = cfg.INITIAL_BALANCE;
+  const final   = trades.reduce((b, t) => b + t.pnl, initial);
+  const totalR  = final - initial;
+  const totalT  = trades.length;
+  const wins    = trades.filter(t => t.pnl > 0).length;
+  const winRt   = totalT ? (wins / totalT) * 100 : 0;
 
-  // max drawdown (running balance)
-  let peak = initialBalance;
-  let mdd  = 0;
-  let running = initialBalance;
-  for (const t of allTrades) {
-    running += t.pnl;
-    if (running > peak) peak = running;
-    const dd = (peak - running) / peak;
-    if (dd > mdd) mdd = dd;
-  }
+  let peak = initial, mdd = 0, run = initial;
+  for (const t of trades) { run += t.pnl; if (run > peak) peak = run; mdd = Math.max(mdd, (peak - run) / peak); }
 
   return `
 You are a senior quantitative strategist.  
-Review the enclosed back-test trade log and produce a concise, data-driven analysis.
-
-Provided:
-- Trade-by-trade details
-- Aggregate stats
-- Strategy config used
-
-Your output must be **ONLY a valid JSON object** with the following keys:
+Given the back-test trades below, return **only** a JSON object with these keys:
 {
   "summary": "One-sentence overview",
   "totalReturn": <number>,
@@ -94,16 +76,16 @@ Trade log:
 ${JSON.stringify(enriched, null, 2)}
 
 Aggregate stats:
-- Initial balance: $${initialBalance.toFixed(2)}
-- Final balance:   $${finalBalance.toFixed(2)}
-- Total return:    $${totalReturn.toFixed(2)}
-- Total trades:    ${totalTrades}
-- Win rate:        ${winRate.toFixed(2)}%
+- Initial balance: $${initial.toFixed(2)}
+- Final balance:   $${final.toFixed(2)}
+- Total return:    $${totalR.toFixed(2)}
+- Total trades:    ${totalT}
+- Win rate:        ${winRt.toFixed(2)}%
 - Max drawdown:    ${(mdd * 100).toFixed(2)}%
 
 Config snapshot:
 ${JSON.stringify(cfg, null, 2)}
-`;
+`.trim();
 }
 
 
@@ -264,12 +246,24 @@ export class BacktestRunner {
         console.log("------------------------------------\n");
 
         fs.writeFileSync('./trades.json', JSON.stringify(allTrades, null, 2));
-// inside _printSummary() after console.log("-----------------\n");
+// ------------------------------------------------------------------
+//  AI POST-TEST ANALYSIS
+// ------------------------------------------------------------------
 const prompt = buildPostTestPrompt(allTrades, this.config);
+
+// reuse the retry-safe wrapper already in StrategyEngine
 const { ok, text } = await new StrategyEngine()._callWithRetry(prompt);
+
 if (ok) {
-  const report = JSON.parse(text.match(/\{.*\}/s)[0]);
-  console.log("\n--- AI Post-Test Analysis ---\n", JSON.stringify(report, null, 2));
+  try {
+    const report = JSON.parse(text.match(/\{.*\}/s)[0]);
+    console.log("\n--- AI Post-Test Analysis ---");
+    console.log(JSON.stringify(report, null, 2));
+  } catch (e) {
+    console.warn("Could not parse AI analysis:", e.message);
+  }
+} else {
+  console.warn("AI analysis call failed.");
 }
         
         
