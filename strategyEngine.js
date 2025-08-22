@@ -2,6 +2,8 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { log } from './logger.js';
 import { calculateIndicatorSeries } from './indicators.js';
+import { getLessons } from './db.js';
+
 
 export class StrategyEngine {
     constructor() {
@@ -46,10 +48,14 @@ export class StrategyEngine {
 
     _createPrompt(contextualData) {
         const dataPayload = JSON.stringify(contextualData, null, 2);
+        const lessons = await getLessons();
 
         return `
             You are an expert quantitative strategist and risk manager for the PF_XBTUSD market.
             Your ONLY job is to produce a single JSON object that defines a complete trade plan.
+
+            Lessons learned from prior back-tests:
+            ${lessons.map(l => `- ${l}`).join('\n')}
             
             **Provided Market Data:**
             You have been provided with the last 720 1-hour OHLC candles and their corresponding indicator series.
