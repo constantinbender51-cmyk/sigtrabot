@@ -7,6 +7,8 @@ import { StrategyEngine } from './strategyEngine.js';
 import { RiskManager } from './riskManager.js';
 import fs from 'fs';
 import { BacktestExecutionHandler } from './backtestExecutionHandler.js';
+import path from 'path';                 // *** NEW ***
+
 // --- ATR utility -------------------------------------------------
 function calculateATR(ohlc, period = 14) {
     const tr = [];
@@ -97,6 +99,10 @@ export class BacktestRunner {
         this.executionHandler = new BacktestExecutionHandler(config.INITIAL_BALANCE);
         this.strategyEngine = new StrategyEngine();
         this.riskManager = new RiskManager({ leverage: 10, marginBuffer: 0.01 });
+        this.blockReportCounter = 0;            // *** NEW ***
+if (!fs.existsSync('./block-reports'))  // *** NEW ***
+  fs.mkdirSync('./block-reports', { recursive: true });
+        
         log.info('BacktestRunner initialized.');
     }
 
@@ -246,33 +252,38 @@ export class BacktestRunner {
         console.log("------------------------------------\n");
 
         fs.writeFileSync('./trades.json', JSON.stringify(allTrades, null, 2));
-// ------------------------------------------------------------------
-//  AI POST-TEST ANALYSIS
-// ------------------------------------------------------------------
-const prompt = buildPostTestPrompt(allTrades, this.config);
-
-// reuse the retry-safe wrapper already in StrategyEngine
-const { ok, text } = await new StrategyEngine()._callWithRetry(prompt);
-
-if (ok) {
-  try {
-    const report = JSON.parse(text.match(/\{.*\}/s)[0]);
-    console.log("\n--- AI Post-Test Analysis ---");
-    console.log(JSON.stringify(report, null, 2));
-  } catch (e) {
-    console.warn("Could not parse AI analysis:", e.message);
-  }
-} else {
-  console.warn("AI analysis call failed.");
-}
-        
-        
-        if (totalTrades > 0) {
-            console.log("--- Trade Log ---");
-            allTrades.forEach((trade, index) => {
-                console.log(`Trade #${index + 1}: ${trade.signal} | P&L: $${trade.pnl.toFixed(2)} | Reason: ${trade.reason}`);
-            });
-            console.log("-----------------\n");
+        // --- 1.  FULL back-test report (already existed) ------------
+        const prompt = buildPostTestPrompt(allTrades, this.config);
+        const { ok, text } = await new StrategyEngine()._callWithRetry(prompt);
+        if (ok) {
+          try {
+            const report = JSON.parse(text.match(/\{.*\}/s)[0]);
+            console.log("\n--- AI Post-Test Analysis ---");
+            console.log(JSON.stringify(report, null, 2));
+          } catch (e) {
+            console.warn("Could not parse AI analysis:", e.message);
+          }
+        } else {
+          console.warn("AI analysis call failed.");
         }
+
+        // --- 2.  10-TRADE BLOCK REPORTS  ---------------------------
+        const closed   = allTrades.filter(t => t.exitTime); // only closed trades
+        const blockSize = 10;
+        if (closed.length % blockSize === 0 && closed.length > 0) {
+          const lastBlock = closed.slice(-blockSize);
+          const blockPrompt = buildPostTestPrompt(lastBlock, this.config);
+          const { ok: ok2, text: text2 } =
+                 await new StrategyEngine()._callWithRetry(blockPrompt);
+
+          let report = {};
+          if (ok2) {
+            try { report = JSON.parse(text2.match(/\{.*\}/s)[0]); } catch {}
+          }
+          const fileName = path.join('./block-reports', `${closed.length}.json`);
+          fs.writeFileSync(fileName, JSON.stringify(report, null, 2));
+          log.info(`[BLOCK REPORT] saved → ${fileName}`);
+        }
+        // -----------------------------------------------------------
     }
 }
