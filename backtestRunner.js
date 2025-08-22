@@ -269,7 +269,7 @@ export class BacktestRunner {
 /*  Block-report helper                                               */
 /* ------------------------------------------------------------------ */
 async function emitBlockReportIfNeeded(allClosedTrades, cfg) {
-  const blockSize = 1;
+  const blockSize = 10;
   if (!allClosedTrades.length || allClosedTrades.length % blockSize !== 0) return;
 
   const lastBlock = allClosedTrades.slice(-blockSize);
