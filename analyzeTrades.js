@@ -3,7 +3,8 @@ import { StrategyEngine } from './strategyEngine.js';
 
 async function analyzeTrades() {
   const executionHandler = new BacktestExecutionHandler(10000); // dummy balance
-  const trades = executionHandler.getTrades(); // or load from log file
+  const trades = JSON.parse(fs.readFileSync('./trades.json', 'utf8'));
+
 
   const strategyEngine = new StrategyEngine(); // reuse or new instance
 
