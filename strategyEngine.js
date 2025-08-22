@@ -3,6 +3,20 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/ge
 import { log } from './logger.js';
 import { calculateIndicatorSeries } from './indicators.js';
 
+import fs   from 'fs';          // *** NEW ***
+import path from 'path';        // *** NEW ***
+function loadLatestBlockReport() {               // *** NEW ***
+  const dir = './block-reports';
+  if (!fs.existsSync(dir)) return null;
+  const files = fs.readdirSync(dir)
+                  .filter(f => f.endsWith('.json'))
+                  .sort((a, b) => parseInt(a) - parseInt(b));
+  if (!files.length) return null;
+  try {
+    return JSON.parse(fs.readFileSync(path.join(dir, files.pop()), 'utf8'));
+  } catch { return null; }
+}
+
 export class StrategyEngine {
     constructor() {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -46,10 +60,16 @@ export class StrategyEngine {
 
     _createPrompt(contextualData) {
         const dataPayload = JSON.stringify(contextualData, null, 2);
+        const blockReport = loadLatestBlockReport();     // *** NEW ***
+        
 
         return `
             You are an expert quantitative strategist and risk manager for the PF_XBTUSD market.
             Your ONLY job is to produce a single JSON object that defines a complete trade plan.
+
+            Recent 10-trade block summary (if any):
+            ${blockReport ? JSON.stringify(blockReport, null, 2) : 'N/A'}
+
             
             **Provided Market Data:**
             You have been provided with the last 720 1-hour OHLC candles and their corresponding indicator series.
