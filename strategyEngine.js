@@ -30,7 +30,6 @@ export class StrategyEngine {
   async _callWithRetry(prompt, max = 4) {
     for (let i = 1; i <= max; i++) {
       try {
-        log.info(`[GEMINI_REQUEST_ATTEMPT_${i}]:\n${prompt}\n---`);
         const res = await this.model.generateContent(prompt);
         const text = res.response.text?.();
         if (!text?.length) throw new Error('Empty response');
