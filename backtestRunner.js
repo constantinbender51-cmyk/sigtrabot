@@ -28,6 +28,84 @@ function filterByDate(candles, startDateStr, endDateStr) {
   const endTs   = tsFromDate(endDateStr);
   return candles.filter(c => c.timestamp >= startTs && c.timestamp < endTs);
 }
+// ------------------------------------------------------------
+// 1.  Build the prompt (place this in backtestRunner.js)
+// ------------------------------------------------------------
+function buildPostTestPrompt(allTrades, cfg) {
+  // helper – format JS timestamp → ISO
+  const fmt = ts => new Date(ts * 1000).toISOString();
+
+  const enriched = allTrades.map((t, idx) => ({
+    index: idx + 1,
+    signal: t.signal,
+    entryTime: fmt(t.entryTime),
+    exitTime:  fmt(t.exitTime),
+    entryPrice: t.entryPrice,
+    exitPrice:  t.exitPrice,
+    size:       t.size,
+    pnl:        t.pnl,
+    pnlPct:     ((t.pnl / t.size / t.entryPrice) * 100).toFixed(2) + '%',
+    reason:     t.reason,
+    stopLoss:   t.stopLoss,
+    takeProfit: t.takeProfit
+  }));
+
+  const initialBalance = cfg.INITIAL_BALANCE;
+  const finalBalance   = allTrades.reduce((b, t) => b + t.pnl, initialBalance);
+  const totalReturn    = finalBalance - initialBalance;
+  const totalTrades    = allTrades.length;
+  const winningTrades  = allTrades.filter(t => t.pnl > 0).length;
+  const losingTrades   = totalTrades - winningTrades;
+  const winRate        = totalTrades ? (winningTrades / totalTrades) * 100 : 0;
+
+  // max drawdown (running balance)
+  let peak = initialBalance;
+  let mdd  = 0;
+  let running = initialBalance;
+  for (const t of allTrades) {
+    running += t.pnl;
+    if (running > peak) peak = running;
+    const dd = (peak - running) / peak;
+    if (dd > mdd) mdd = dd;
+  }
+
+  return `
+You are a senior quantitative strategist.  
+Review the enclosed back-test trade log and produce a concise, data-driven analysis.
+
+Provided:
+- Trade-by-trade details
+- Aggregate stats
+- Strategy config used
+
+Your output must be **ONLY a valid JSON object** with the following keys:
+{
+  "summary": "One-sentence overview",
+  "totalReturn": <number>,
+  "winRate": <number>,
+  "maxDrawdownPct": <number>,
+  "bestTrade": { "index": <int>, "profit": <number>, "reason": "<string>" },
+  "worstTrade": { "index": <int>, "loss": <number>, "reason": "<string>" },
+  "commonLossPatterns": [ "<string>", ... ],
+  "improvements": [ "<string>", ... ]
+}
+
+Trade log:
+${JSON.stringify(enriched, null, 2)}
+
+Aggregate stats:
+- Initial balance: $${initialBalance.toFixed(2)}
+- Final balance:   $${finalBalance.toFixed(2)}
+- Total return:    $${totalReturn.toFixed(2)}
+- Total trades:    ${totalTrades}
+- Win rate:        ${winRate.toFixed(2)}%
+- Max drawdown:    ${(mdd * 100).toFixed(2)}%
+
+Config snapshot:
+${JSON.stringify(cfg, null, 2)}
+`;
+}
+
 
 // --- FIX: Added export statement ---
 export class BacktestRunner {
@@ -186,6 +264,14 @@ export class BacktestRunner {
         console.log("------------------------------------\n");
 
         fs.writeFileSync('./trades.json', JSON.stringify(allTrades, null, 2));
+// inside _printSummary() after console.log("-----------------\n");
+const prompt = buildPostTestPrompt(allTrades, this.config);
+const { ok, text } = await new StrategyEngine()._callWithRetry(prompt);
+if (ok) {
+  const report = JSON.parse(text.match(/\{.*\}/s)[0]);
+  console.log("\n--- AI Post-Test Analysis ---\n", JSON.stringify(report, null, 2));
+}
+        
         
         if (totalTrades > 0) {
             console.log("--- Trade Log ---");
