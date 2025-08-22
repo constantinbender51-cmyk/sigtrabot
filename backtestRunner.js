@@ -114,7 +114,7 @@ export class BacktestRunner {
         const date = new Date(current.timestamp * 1000).toISOString();
         log.info(`[FILTER] [${date}] ${dir} breakout + vol-expansion → candidate`);
     }
-    return bullish || bearish;
+    return true;//bullish || bearish;
 }
 
 
