@@ -223,7 +223,7 @@ export class BacktestRunner {
         }
     }
 
-    _printSummary(apiCallCount) {
+   async _printSummary(apiCallCount) {
         log.info('--- BACKTEST COMPLETE ---');
         const allTrades = this.executionHandler.getTrades();
         const totalTrades = allTrades.length;
