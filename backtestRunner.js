@@ -49,7 +49,7 @@ export class BacktestRunner {
 
             if (!this.executionHandler.getOpenTrade()) {
                 const signalFound = this._checkForSignal(marketData);
-                if (signalFound) {
+                if (signalFound && i % 7 === 0) {
                     if (apiCallCount >= this.config.MAX_API_CALLS) {
                         log.info(`[BACKTEST] Reached the API call limit. Ending simulation.`);
                         break;
