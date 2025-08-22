@@ -70,9 +70,8 @@ export class StrategyEngine {
             Recent 10-trade block summary (if any):
             ${blockReport ? JSON.stringify(blockReport, null, 2) : 'N/A'}
 
-            
             **Provided Market Data:**
-            You have been provided with the last 720 1-hour OHLC candles and their corresponding indicator series.
+            You have been provided with the last 720 1-hour OHLC candles and their corresponding indicator series. Timestamps are in seconds from 1.1.1970, multiply by 1000 to get ms.
             ${dataPayload}
 
             **Your Task (Produce the final JSON based on your complete analysis):**
