@@ -6,7 +6,6 @@ import { BacktestDataHandler } from './backtestDataHandler.js';
 import { StrategyEngine } from './strategyEngine.js';
 import { RiskManager } from './riskManager.js';
 import fs from 'fs';
-import { initDb, upsertLessons, getLessons } from './db.js';
 import { BacktestExecutionHandler } from './backtestExecutionHandler.js';
 // --- ATR utility -------------------------------------------------
 function calculateATR(ohlc, period = 14) {
@@ -247,37 +246,33 @@ export class BacktestRunner {
         console.log("------------------------------------\n");
 
         fs.writeFileSync('./trades.json', JSON.stringify(allTrades, null, 2));
-// --- Static-lesson generation + DB write ---
-const prompt = `
-You are a quantitative strategist.
-Given the following back-test results, return ONLY a JSON array of 3 short, actionable lessons (strings) for the next live-run.
+// ------------------------------------------------------------------
+//  AI POST-TEST ANALYSIS
+// ------------------------------------------------------------------
+const prompt = buildPostTestPrompt(allTrades, this.config);
 
-Trade log:
-${JSON.stringify(allTrades, null, 2)}
-
-Summary:
-Initial: $${this.config.INITIAL_BALANCE}  Final: $${finalBalance.toFixed(2)}  Trades: ${allTrades.length}
-`;
-
+// reuse the retry-safe wrapper already in StrategyEngine
 const { ok, text } = await new StrategyEngine()._callWithRetry(prompt);
+
 if (ok) {
   try {
-    const lessons = JSON.parse(text.match(/$$.*$$ /s)[0]);
-    await upsertLessons(lessons);
-    console.log('\n--- Lessons saved to DB ---\n', lessons);
+    const report = JSON.parse(text.match(/\{.*\}/s)[0]);
+    console.log("\n--- AI Post-Test Analysis ---");
+    console.log(JSON.stringify(report, null, 2));
   } catch (e) {
-    console.warn('Could not parse lessons JSON', e.message);
+    console.warn("Could not parse AI analysis:", e.message);
   }
 } else {
-  console.warn('Lesson generation failed.');
+  console.warn("AI analysis call failed.");
 }
         
-       /* if (totalTrades > 0) {
+        
+        if (totalTrades > 0) {
             console.log("--- Trade Log ---");
             allTrades.forEach((trade, index) => {
                 console.log(`Trade #${index + 1}: ${trade.signal} | P&L: $${trade.pnl.toFixed(2)} | Reason: ${trade.reason}`);
             });
             console.log("-----------------\n");
-        }*/
+        }
     }
 }
