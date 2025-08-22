@@ -46,7 +46,7 @@ export class StrategyEngine {
     }
     /* -------------------------------------------------------------- */
 
-    _createPrompt(contextualData) {
+   async _createPrompt(contextualData) {
         const dataPayload = JSON.stringify(contextualData, null, 2);
         const lessons = await getLessons();
 
