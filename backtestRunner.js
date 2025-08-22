@@ -6,6 +6,7 @@ import { BacktestDataHandler } from './backtestDataHandler.js';
 import { StrategyEngine } from './strategyEngine.js';
 import { RiskManager } from './riskManager.js';
 import fs from 'fs';
+import { initDb, upsertLessons, getLessons } from './db.js';
 import { BacktestExecutionHandler } from './backtestExecutionHandler.js';
 // --- ATR utility -------------------------------------------------
 function calculateATR(ohlc, period = 14) {
