@@ -1,4 +1,4 @@
-// strategyEngine.js – concise & still functional
+// strategyEngine.js – print every AI response *inside* _callWithRetry
 import fs from 'fs';
 import path from 'path';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
@@ -27,15 +27,21 @@ export class StrategyEngine {
     log.info('StrategyEngine ready.');
   }
 
+  /* ------------- retry helper that ALWAYS logs ------------- */
   async _callWithRetry(prompt, max = 4) {
     for (let i = 1; i <= max; i++) {
       try {
+        log.info(`[GEMINI] Request attempt ${i}/${max}`);
         const res = await this.model.generateContent(prompt);
         const text = res.response.text?.();
         if (!text?.length) throw new Error('Empty response');
+
+        // ---------- verbatim print ----------
+        log.info(`[GEMINI_FULL_RESPONSE_ATTEMPT_${i}]:\n${text}\n---`);
+
         return { ok: true, text };
       } catch (err) {
-        log.warn(`Gemini attempt ${i}/${max}: ${err.message} → retry in 61 s`);
+        log.warn(`[GEMINI] Attempt ${i} failed: ${err.message}`);
         if (i === max) return { ok: false, error: err };
         await new Promise(r => setTimeout(r, 61_000));
       }
