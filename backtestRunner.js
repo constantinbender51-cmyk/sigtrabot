@@ -52,10 +52,6 @@ export class BacktestRunner {
 
         for (let i = this.config.WARMUP_PERIOD; i < allCandles.length; i++) {
             const currentCandle = allCandles[i];
-                // --- NEW: print the candle’s human-readable date ---
-            const dateStr = new Date(currentCandle.timestamp * 1000).toISOString();
-            log.info(`[CANDLE] ${dateStr}`);
-            
             const marketData = { ohlc: allCandles.slice(i - this.config.DATA_WINDOW_SIZE, i) };
 
             const openTrade = this.executionHandler.getOpenTrade();
@@ -64,13 +60,18 @@ export class BacktestRunner {
             }
 
             if (!this.executionHandler.getOpenTrade()) {
+                
+                
                 const signalFound = this._checkForSignal(marketData);
-                if (signalFound && i % 48 === 0) {
+                if (signalFound && i % 120 === 0) {
                     if (apiCallCount >= this.config.MAX_API_CALLS) {
                         log.info(`[BACKTEST] Reached the API call limit. Ending simulation.`);
                         break;
                     }
                     apiCallCount++;
+                    // --- NEW: print the candle’s human-readable date ---
+                    const dateStr = new Date(currentCandle.timestamp * 1000).toISOString();
+                    log.info(`[CANDLE] ${dateStr}`);
                     await this._handleSignal(marketData, currentCandle, apiCallCount);
                 }
             }
