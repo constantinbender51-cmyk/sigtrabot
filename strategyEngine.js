@@ -4,7 +4,7 @@ import path from 'path';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { log } from './logger.js';
 import { calculateIndicatorSeries } from './indicators.js';
-                    // already present
+
 function latest10ClosedTrades() {
   if (!fs.existsSync('./trades.json')) return [];
   try {
@@ -18,8 +18,6 @@ export class StrategyEngine {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const safety = [{ category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }];
     this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite', safetySettings: safety });
-    this._signalMemory = [];
-    this._insideGenerateSignal = false;
     log.info('StrategyEngine ready.');
   }
 
@@ -29,21 +27,6 @@ export class StrategyEngine {
         const res = await this.model.generateContent(prompt);
         const text = res.response.text?.();
         if (!text?.length) throw new Error('Empty response');
-        if (this._insideGenerateSignal) {
-  const match = text.match(/\{.*\}/s);
-  if (match) {
-    try {
-      const parsed = JSON.parse(match[0]);
-      this._signalMemory.push(parsed);
-      if (this._signalMemory.length > 10)
-        this._signalMemory.shift(); // keep last 50
-    } catch {
-      // ignore malformed JSON
-    }
-  }
-}
-
-            
         log.info(`[GEMINI_RESPONSE_ATTEMPT_${i}]:\n${text}\n---`);
         return { ok: true, text };
       } catch (err) {
@@ -54,29 +37,22 @@ export class StrategyEngine {
     }
   }
 
-  _prompt(market, block) {
-      const recent = latest10ClosedTrades();     // *** NEW ***
-    
+  _prompt(market) {
+    const recent = latest10ClosedTrades();
     return `
-
 You are an expert strategist for PF_XBTUSD. Use step-by-step math, not narrative fluff to derive a trade setup. You will be called every 60 minutes until a short or long order has been placed and their corresponding stoploss and takeprofit orders. After those have been triggered you will be called again until a new order has been placed.
 Last 10 closed trades:
 ${JSON.stringify(recent, null, 2)}
 
-${this._signalMemory.length ? `
-Previous 10 AI JSON signals:
-${JSON.stringify(this._signalMemory.slice(-50), null, 2)}
-` : ''}
-
 Market data (720 1-h candles, indicators where apply):
 ${JSON.stringify(market, null, 2)}
-    
+
 Return somewhere in your response this JSON:
 {
   "signal": "LONG|SHORT|HOLD", 
-  "confidence": <0-100>, //Derive this by calculation 
-  "stop_loss_distance_in_usd": <number>, //0 if HOLD, calculate based on target
-  "take_profit_distance_in_usd": <number>, //0 if HOLD, calculate this based on target
+  "confidence": <0-100>,
+  "stop_loss_distance_in_usd": <number>,
+  "take_profit_distance_in_usd": <number>,
   "reason": "<string>" 
 }`;
   }
@@ -87,11 +63,8 @@ Return somewhere in your response this JSON:
     if (!ind) return this._fail('Indicator error');
 
     const context = { ohlc: marketData.ohlc, indicators: [] };
-    const prompt  = this._prompt(context, loadLatestBlockReport());
-    this._insideGenerateSignal = true;
-
+    const prompt  = this._prompt(context);
     const { ok, text, error } = await this._callWithRetry(prompt);
-    this._insideGenerateSignal = false;
     if (!ok) return this._fail(error.message);
 
     try {
