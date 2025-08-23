@@ -67,6 +67,10 @@ async function cycle() {
     const exec  = new ExecutionHandler(data.api);
 
     const market = await data.fetchAllData(OHLC_PAIR, INTERVAL);
+    console.log('--- RAW MARKET.FILLS -------------------------------------');
+    console.dir(market.fills, { depth: null });
+    console.log('----------------------------------------------------------');
+    
     curBalance   = market.balance;
     equity.push(curBalance);
 
