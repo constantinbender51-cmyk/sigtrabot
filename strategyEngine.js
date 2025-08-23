@@ -65,11 +65,11 @@ ${JSON.stringify(market, null, 2)}
 
 Return **only** this JSON:
 {
-  "signal": "LONG|SHORT|HOLD", //HOLD waits 60 minutes ans asks again. LONG and SHORT waits till the stop loss or take profit concludes the cycle and asks again.
+  "signal": "LONG|SHORT|HOLD", //learn from trade history
   "confidence": <0-100>, //if uncertain, hold
-  "stop_loss_distance_in_usd": <number>, 
-  "take_profit_distance_in_usd": <number>, 
-  "reason": "<string>" //Put step by step math here.
+  "stop_loss_distance_in_usd": <number>, //learn from trade history
+  "take_profit_distance_in_usd": <number>, //learn from trade history
+  "reason": "<string>" //Put step by step math here and learn from trade history!
 }`;
   }
 
