@@ -56,7 +56,7 @@ export class StrategyEngine {
       const recent = latest10ClosedTrades();     // *** NEW ***
     
     return `
-You are an expert strategist for PF_XBTUSD. Use step-by-step math, not narrative fluff.
+You are an expert strategist for PF_XBTUSD. 
 Last 10 closed trades:
 ${JSON.stringify(recent, null, 2)}
 
@@ -65,11 +65,11 @@ ${JSON.stringify(market, null, 2)}
 
 Return **only** this JSON:
 {
-  "signal": "LONG|SHORT|HOLD", //learn from trade history
-  "confidence": <0-100>, //if uncertain, hold
+  "signal": "LONG|SHORT|HOLD", //Holding period until retest: 60 minutes
+  "confidence": <0-100>, //low confidence should result in a hold signal
   "stop_loss_distance_in_usd": <number>, 
   "take_profit_distance_in_usd": <number>, 
-  "reason": "<string>" //Put step-by-step math here, and logic
+  "reason": "<string>" //Use step-by-step math, not narrative fluff.
 }`;
   }
 
