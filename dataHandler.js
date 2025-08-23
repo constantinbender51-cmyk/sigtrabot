@@ -22,7 +22,6 @@ export class DataHandler {
      * @returns {Promise<object>} A consolidated object containing all fetched data.
      */
     async fetchAllData(pair = 'XBTUSD', interval = 60) {
-        console.log("--- Starting data fetch cycle ---");
         try {
             const [
                 ohlcData,
@@ -37,8 +36,6 @@ export class DataHandler {
                 this.fetchOpenOrders(),
                 this.fetchRecentFills()
             ]);
-
-            console.log("--- Data fetch cycle completed successfully ---");
 
             return {
                 ohlc: ohlcData,
@@ -59,7 +56,6 @@ export class DataHandler {
      * @returns {Promise<number>} The available USD margin as a number. Returns 0 if not found.
      */
     async fetchAccountBalance() {
-        console.log("Fetching account balance...");
         try {
             const data = await this.api.getAccounts();
             
