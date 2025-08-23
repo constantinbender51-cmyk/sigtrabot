@@ -60,7 +60,7 @@ You are an expert strategist for PF_XBTUSD. Use step-by-step math, not narrative
 Learn from Last 10 closed trades:
 ${JSON.stringify(recent, null, 2)}
 
-Analyze Market data (720 1-h candles):
+Analyze Market data (720 1-h candles)(timestamp: number of seconds since 00:00:00 UTC on 1 January 1970, last indicator entry corresponds to the current date/last ohlc data entry):
 ${JSON.stringify(market, null, 2)}
 
 A past test run analysis has resulted in the following suggestions:
@@ -89,22 +89,22 @@ Return **only** this JSON:
 
     const context = { ohlc: marketData.ohlc, indicators: ind };
     /* ---------- NEW DEBUG OUTPUT ---------- */
-const firstCandleTs = new Date(marketData.ohlc[0].timestamp * 1000).toISOString();
-const lastCandleTs  = new Date(marketData.ohlc[marketData.ohlc.length - 1].timestamp * 1000).toISOString();
-const numCandles    = marketData.ohlc.length;
-const numIndicators = Object.keys(ind).length;
+    const firstCandleTs = new Date(marketData.ohlc[0].timestamp * 1000).toISOString();
+    const lastCandleTs  = new Date(marketData.ohlc[marketData.ohlc.length - 1].timestamp * 1000).toISOString();
+    const numCandles    = marketData.ohlc.length;
+    const numIndicators = Object.keys(ind).length;
 
-console.log('--- DEBUG: CANDLE RANGE ---');
-console.log('First candle   :', firstCandleTs);
-console.log('Last candle    :', lastCandleTs);
-console.log('Candles count  :', numCandles);
-console.log('Indicator count:', numIndicators);
-console.log(
-  'Indicator sizes:',
-  Object.fromEntries(Object.entries(ind).map(([k, v]) => [k, Array.isArray(v) ? v.length : '-']))
-);
-console.log('----------------------------');
-/* -------------------------------------- */
+    console.log('--- DEBUG: CANDLE RANGE ---');
+    console.log('First candle   :', firstCandleTs);
+    console.log('Last candle    :', lastCandleTs);
+    console.log('Candles count  :', numCandles);
+    console.log('Indicator count:', numIndicators);
+    console.log(
+      'Indicator sizes:',
+      Object.fromEntries(Object.entries(ind).map(([k, v]) => [k, Array.isArray(v) ? v.length : '-']))
+    );
+    console.log('----------------------------');
+    /* -------------------------------------- */
 
     const prompt  = this._prompt(context, loadLatestBlockReport());
 
