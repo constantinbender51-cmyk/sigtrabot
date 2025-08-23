@@ -110,7 +110,6 @@ export class BacktestRunner {
     this.exec  = new BacktestExecutionHandler(cfg.INITIAL_BALANCE);
     this.strat = new StrategyEngine();
     this.risk  = new RiskManager({ leverage: 10, marginBuffer: 0.01 });
-    this.closedTrades = [];   // running list of finished trades
     log.info('BacktestRunner initialized.');
   }
 
