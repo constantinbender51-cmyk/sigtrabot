@@ -181,6 +181,9 @@ export class StrategyEngine {
   const momPct = ((latest - sma20) / sma20 * 100).toFixed(2);
   const volPct = (atr14 / latest * 100).toFixed(2);
 
+    console.log('[PROMPT-DEBUG] market.fills =', market.fills);
+    console.log('[PROMPT-DEBUG] market.fills?.fills =', market.fills?.fills);
+    
   const last10 = market.fills?.fills
   ? buildLast10ClosedFromRawFills(market.fills.fills, 10)
   : readLast10ClosedTradesFromFile();
