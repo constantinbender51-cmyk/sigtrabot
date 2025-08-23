@@ -12,28 +12,20 @@ const readLast10ClosedTradesFromFile = () => {
 };
 
 function buildLast10ClosedFromRawFills(rawFills, n = 10) {
-  console.log('[FIFO-DEBUG] rawFills.length =', rawFills?.length ?? 0);
   if (!Array.isArray(rawFills) || rawFills.length === 0) {
-    console.log('[FIFO-DEBUG] no fills → returning []');
     return [];
   }
-  console.log('[FIFO-DEBUG] first fillTime =', rawFills[0].fillTime);
-  console.log('[FIFO-DEBUG] last  fillTime =', rawFills.at(-1).fillTime);
 
   const fills = [...rawFills].reverse(); // newest→oldest → oldest→newest
-  console.log('[FIFO-DEBUG] reversed fill count =', fills.length);
-
+  
   const queue = [];
   const closed = [];
 
   for (const f of fills) {
     const side = f.side === 'buy' ? 'LONG' : 'SHORT';
-    console.log('[FIFO-DEBUG] processing', f.fillTime, f.side, f.size, '@', f.price);
-
     // opening
     if (!queue.length || queue.at(-1).side === side) {
       queue.push({ side, entryTime: f.fillTime, entryPrice: f.price, size: f.size });
-      console.log('[FIFO-DEBUG]  -> OPEN', { side, size: f.size, price: f.price });
       continue;
     }
 
