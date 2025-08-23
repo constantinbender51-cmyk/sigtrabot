@@ -40,7 +40,6 @@ export async function ensureDataFileExists(filePath) {
     let startTime = new Date(START_DATE).getTime();
     const endTime = Date.now();
     while (startTime < endTime) {
-        log.info(`[DATA] Fetching data from ${new Date(startTime).toISOString()}...`);
         try {
             const candles = await fetchBinanceOHLC(BINANCE_PAIR, INTERVAL, startTime, BATCH_SIZE);
             if (candles.length === 0) break;
@@ -61,7 +60,6 @@ export async function ensureDataFileExists(filePath) {
         const json2csvParser = new Json2CsvParser({ fields: ["timestamp", "open", "high", "low", "close", "volume"] });
         const csv = json2csvParser.parse(uniqueCandles);
         fs.writeFileSync(filePath, csv);
-        log.info(`[DATA] Data successfully saved to ${filePath}`);
     } else {
         throw new Error("Failed to download any historical data. Cannot proceed with backtest.");
     }
