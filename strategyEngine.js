@@ -190,7 +190,10 @@ export class StrategyEngine {
   const last10 = market.fills?.fills
     ? buildLast10ClosedFromRawFills(market.fills.fills, 10)
     : readLast10ClosedTradesFromFile();
-
+    console.log('--- last10 closed trades ----------------------------------');
+    console.table(last10);
+    console.log('----------------------------------------------------------');
+    
   return `
 Expert PF_XBTUSD strategist: every 60 min output LONG/SHORT/HOLD JSON with calculated stops/targets; repeat after fills.
 
