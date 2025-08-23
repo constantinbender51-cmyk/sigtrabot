@@ -67,9 +67,9 @@ Return **only** this JSON:
 {
   "signal": "LONG|SHORT|HOLD", //learn from trade history
   "confidence": <0-100>, //if uncertain, hold
-  "stop_loss_distance_in_usd": <number>, //learn from trade history
-  "take_profit_distance_in_usd": <number>, //learn from trade history
-  "reason": "<string>" //Put step by step math here and learn from trade history!
+  "stop_loss_distance_in_usd": <number>, 
+  "take_profit_distance_in_usd": <number>, 
+  "reason": "<string>" //Put step-by-step math here, and logic
 }`;
   }
 
