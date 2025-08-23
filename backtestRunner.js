@@ -130,7 +130,7 @@ export class BacktestRunner {
 
       if (this.exec.getOpenTrade()) this._checkExit(candle);
 
-      if (!this.exec.getOpenTrade()) {
+      if (!this.exec.getOpenTrade() && this._hasSignal({ ohlc : window }) {
         if (apiCalls >= this.cfg.MAX_API_CALLS) {
           log.info('[BACKTEST] Reached the API call limit. Ending simulation.');
           break;
@@ -172,36 +172,28 @@ emitBlockReportIfNeeded(updated.filter(tr => tr.exitTime), this.cfg);
     }
   }
 
-  _hasSignal(market) {
-    const LOOKBACK   = 200;
-    const MIN_ATR_M  = 1.2;
-    const MIN_ADR_P  = 0.005;
+    _hasSignal(market) {
+    // 21-period Donchian channel on 1-hour bars
+    const PERIOD = 21;
 
-    if (market.ohlc.length < LOOKBACK + 1) return false;
+    if (market.ohlc.length < PERIOD + 1) return false;
 
     const cur   = market.ohlc[market.ohlc.length - 1];
-    const prev  = market.ohlc.slice(-LOOKBACK - 1, -1);
+    const prev  = market.ohlc.slice(-PERIOD - 1, -1); // last 21 bars
 
     const hh = Math.max(...prev.map(c => c.high));
     const ll = Math.min(...prev.map(c => c.low));
+    const mid = (hh + ll) / 2;
 
-    const atrNow  = calculateATR(market.ohlc.slice(-21));
-    const atrPrev = calculateATR(market.ohlc.slice(-41, -21));
-    const adrNow  = Math.max(...market.ohlc.slice(-24).map(c => c.high - c.low)) / cur.close;
-
-    const volExp  = atrNow > atrPrev * MIN_ATR_M;
-    const notDead = adrNow >= MIN_ADR_P;
-
-    const minDist = hh * 0.003;
-    const maxDist = ll * 0.003;
-
-    const bullish = cur.high > hh + minDist && volExp && notDead;
-    const bearish = cur.low  < ll - maxDist && volExp && notDead;
+    // Only trigger the AI if price has CLEARLY broken above or below the mid-line
+    const buffer = cur.close * 0.0015; // ~0.15 % noise band
+    const bullish = cur.high > mid + buffer;
+    const bearish = cur.low  < mid - buffer;
 
     if (bullish || bearish) {
       const dir  = bullish ? 'Bullish' : 'Bearish';
       const date = new Date(cur.timestamp * 1000).toISOString();
-      log.info(`[FILTER] [${date}] ${dir} breakout + vol-expansion → candidate`);
+      log.info(`[FILTER] [${date}] ${dir} breakout vs 21-h Donchian mid (${mid.toFixed(2)})`);
     }
     return bullish || bearish;
   }
