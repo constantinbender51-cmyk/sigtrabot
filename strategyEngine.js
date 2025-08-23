@@ -94,7 +94,7 @@ Return **only** this JSON:
     console.log('--- DEBUG: CANDLE RANGE ---');
     console.log('First candle :', firstCandleTs);
     console.log('Last candle  :', lastCandleTs);
-    console.log('Indicators   :', JSON.stringify(ind, null, 2));
+    console.log('Indicators   :', Object.keys(ind).join(', '));
     console.log('----------------------------');
     /* -------------------------------------- */
 
