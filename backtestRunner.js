@@ -41,12 +41,9 @@ export class BacktestRunner {
     this.exec  = new BacktestExecutionHandler(cfg.INITIAL_BALANCE);
     this.strat = new StrategyEngine();
     this.risk  = new RiskManager({ leverage: 10, marginBuffer: 0.01 });
-    log.info('BacktestRunner initialized.');
   }
 
-  async run() {
-    log.info('--- STARTING NEW BACKTEST (WITH MA FILTER) ---');
-
+  async run() { 
     let candles = this.data.getAllCandles();
     candles = filterByDate(candles, '2022-01-01', '2023-01-01');
     if (!candles || candles.length < this.cfg.WARMUP_PERIOD) {
@@ -92,7 +89,6 @@ export class BacktestRunner {
 
     if (exitPrice) {
       const date = new Date(candle.timestamp * 1000).toISOString();
-      log.info(`[EXIT] [${date}] ${exitReason} triggered for ${t.signal} @ ${exitPrice}`);
       this.exec.closeTrade(t, exitPrice, candle.timestamp);
 
       // persist updated trades
@@ -119,7 +115,6 @@ export class BacktestRunner {
     if (bullish || bearish) {
       const dir  = bullish ? 'Bullish' : 'Bearish';
       const date = new Date(cur.timestamp * 1000).toISOString();
-      log.info(`[FILTER] [${date}] ${dir} breakout vs 21-h Donchian mid (${mid.toFixed(2)})`);
     }
     return bullish || bearish;
   }
@@ -159,7 +154,6 @@ export class BacktestRunner {
     const winRate  = total ? (wins / total) * 100 : 0;
     const pnl      = this.exec.balance - this.cfg.INITIAL_BALANCE;
 
-    console.log('\n--- Backtest Performance Summary ---');
     console.log(`Analyzed crossover events: ${apiCalls}`);
     console.log(`Initial Balance : $${this.cfg.INITIAL_BALANCE.toFixed(2)}`);
     console.log(`Final Balance   : $${this.exec.balance.toFixed(2)}`);
