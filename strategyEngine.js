@@ -1,4 +1,4 @@
-// strategyEngine.js
+// strategyEngine.js  —  stripped to essentials, ONLY buildLast10ClosedFromRawFills keeps debug logs
 import fs from 'fs';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { log } from './logger.js';
@@ -6,20 +6,17 @@ import { log } from './logger.js';
 const readLast10ClosedTradesFromFile = () => {
   try {
     return JSON.parse(fs.readFileSync('./trades.json', 'utf8'))
-                .filter(t => t.exitTime)   // only fully closed
-                .slice(-10);
+               .filter(t => t.exitTime)
+               .slice(-10);
   } catch { return []; }
 };
-function buildLast10ClosedFromRawFills(rawFills, n = 10) {
-  // 0️⃣  raw payload sanity check
-  console.log('[FIFO-DEBUG] rawFills.length =', rawFills?.length ?? 0);
 
+function buildLast10ClosedFromRawFills(rawFills, n = 10) {
+  console.log('[FIFO-DEBUG] rawFills.length =', rawFills?.length ?? 0);
   if (!Array.isArray(rawFills) || rawFills.length === 0) {
     console.log('[FIFO-DEBUG] no fills → returning []');
     return [];
   }
-
-  // 1️⃣  show first & last timestamp so you see the order
   console.log('[FIFO-DEBUG] first fillTime =', rawFills[0].fillTime);
   console.log('[FIFO-DEBUG] last  fillTime =', rawFills.at(-1).fillTime);
 
@@ -33,19 +30,18 @@ function buildLast10ClosedFromRawFills(rawFills, n = 10) {
     const side = f.side === 'buy' ? 'LONG' : 'SHORT';
     console.log('[FIFO-DEBUG] processing', f.fillTime, f.side, f.size, '@', f.price);
 
-    // opening logic
+    // opening
     if (!queue.length || queue.at(-1).side === side) {
       queue.push({ side, entryTime: f.fillTime, entryPrice: f.price, size: f.size });
       console.log('[FIFO-DEBUG]  -> OPEN', { side, size: f.size, price: f.price });
       continue;
     }
 
-    // closing logic
+    // closing
     let remaining = f.size;
     while (remaining > 0 && queue.length && queue[0].side !== side) {
       const open = queue.shift();
       const match = Math.min(remaining, open.size);
-
       const pnl = (f.price - open.entryPrice) * match * (open.side === 'LONG' ? 1 : -1);
       closed.push({
         side: open.side,
@@ -56,13 +52,8 @@ function buildLast10ClosedFromRawFills(rawFills, n = 10) {
         size: match,
         pnl
       });
-
       console.log('[FIFO-DEBUG]  -> CLOSE', {
-        side: open.side,
-        entryPrice: open.entryPrice,
-        exitPrice: f.price,
-        size: match,
-        pnl
+        side: open.side, entryPrice: open.entryPrice, exitPrice: f.price, size: match, pnl
       });
 
       open.size -= match;
@@ -80,65 +71,6 @@ function buildLast10ClosedFromRawFills(rawFills, n = 10) {
   return closed.slice(-n).reverse();
 }
 
-function buildLastNClosedTrades(marketData, n = 10) {
-  /* 1. Back-test: no Kraken fills field -> fall back to trades.json  */
-  if (!marketData.fills?.fills) return readLast10ClosedTradesFromFile();
-
-  /* 2. Live: synthesise closed trades from raw fills                */
-  const fills = marketData.fills.fills;
-  const queue = [];          // running FIFO positions
-  const closed = [];
-
-  for (const f of [...fills].reverse()) {   // oldest → newest
-    const side = f.side === 'buy' ? 'LONG' : 'SHORT';
-
-    /* open new position */
-    if (!queue.length || queue.at(-1).side === side) {
-      queue.push({
-        side,
-        entryTime: f.fillTime,
-        entryPrice: f.price,
-        size: f.size
-      });
-      continue;
-    }
-
-    /* close existing position(s) */
-    let remaining = f.size;
-    while (remaining > 0 && queue.length && queue[0].side !== side) {
-      const open = queue.shift();
-      const match = Math.min(remaining, open.size);
-
-      closed.push({
-        side: open.side,
-        entryTime: open.entryTime,
-        entryPrice: open.entryPrice,
-        exitTime: f.fillTime,
-        exitPrice: f.price,
-        size: match,
-        pnl: (f.price - open.entryPrice) * match * (open.side === 'LONG' ? 1 : -1)
-      });
-
-      open.size -= match;
-      remaining -= match;
-      if (open.size) queue.unshift(open);
-    }
-
-    /* any residual becomes a new position */
-    if (remaining > 0) {
-      queue.push({
-        side,
-        entryTime: f.fillTime,
-        entryPrice: f.price,
-        size: remaining
-      });
-    }
-  }
-
-  return closed.slice(-n).reverse();   // newest last
-}
-
-
 export class StrategyEngine {
   constructor() {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -153,10 +85,8 @@ export class StrategyEngine {
         const res = await this.model.generateContent(prompt);
         const text = res.response.text?.();
         if (!text?.length) throw new Error('Empty response');
-        log.info(`[GEMINI_ATTEMPT_${i}]:\n${text}\n---`);
         return { ok: true, text };
       } catch (err) {
-        log.warn(`[GEMINI] Attempt ${i} failed: ${err.message}`);
         if (i === max) return { ok: false, error: err };
         await new Promise(r => setTimeout(r, 61_000));
       }
@@ -164,39 +94,28 @@ export class StrategyEngine {
   }
 
   _prompt(market) {
-  console.log('[PROMPT] received market keys:', Object.keys(market));
-  console.log('[PROMPT] market.fills ===', market.fills);
-  const closes = market.ohlc.map(c => c.close);
-  const latest = closes.at(-1);
-  const sma20  = closes.slice(-20).reduce((a, b) => a + b, 0) / 20;
-  const atr14  = (() => {
-    const trs = [];
-    for (let i = 1; i < 15; i++) {
-      const h  = market.ohlc.at(-i).high;
-      const l  = market.ohlc.at(-i).low;
-      const pc = market.ohlc.at(-i - 1)?.close ?? h;
-      trs.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
-    }
-    return trs.reduce((a, b) => a + b, 0) / 14;
-  })();
+    const closes = market.ohlc.map(c => c.close);
+    const latest = closes.at(-1);
+    const sma20  = closes.slice(-20).reduce((a, b) => a + b, 0) / 20;
+    const atr14  = (() => {
+      const trs = [];
+      for (let i = 1; i < 15; i++) {
+        const h  = market.ohlc.at(-i).high;
+        const l  = market.ohlc.at(-i).low;
+        const pc = market.ohlc.at(-i - 1)?.close ?? h;
+        trs.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+      }
+      return trs.reduce((a, b) => a + b, 0) / 14;
+    })();
 
-  const momPct = ((latest - sma20) / sma20 * 100).toFixed(2);
-  const volPct = (atr14 / latest * 100).toFixed(2);
+    const momPct = ((latest - sma20) / sma20 * 100).toFixed(2);
+    const volPct = (atr14 / latest * 100).toFixed(2);
 
-    console.log('[PROMPT-DEBUG] market.fills =', market.fills);
-    console.log('[PROMPT-DEBUG] market.fills?.fills =', market.fills?.fills);
-    
-  const last10 = market.fills?.fills
-  ? buildLast10ClosedFromRawFills(market.fills.fills, 10)
-  : readLast10ClosedTradesFromFile();
+    const last10 = market.fills?.fills
+      ? buildLast10ClosedFromRawFills(market.fills.fills, 10)
+      : readLast10ClosedTradesFromFile();
 
-console.log('--- last10 closed trades ----------------------------------');
-console.table(last10);
-console.log('----------------------------------------------------------');
-
-    
-    
-  return `
+    return `
 Expert PF_XBTUSD strategist: every 60 min output LONG/SHORT/HOLD JSON with calculated stops/targets; repeat after fills.
 
 Candles (720×1h): ${JSON.stringify(market.ohlc)}
@@ -209,14 +128,12 @@ Summary:
 last10=${JSON.stringify(last10)}
 
 Return JSON:{"signal":"LONG|SHORT|HOLD","confidence":0-100,"stop_loss_distance_in_usd":<n>,"take_profit_distance_in_usd":<n>,"reason":"<str>"}`;
-}
+  }
 
   async generateSignal(marketData) {
     if (!marketData?.ohlc?.length) return this._fail('No OHLC');
     const prompt = this._prompt(marketData);
     const { ok, text } = await this._callWithRetry(prompt);
-    if (!ok) return this._fail('Bad AI response');
-
     try {
       return JSON.parse(text.match(/\{.*\}/s)?.[0]);
     } catch {
