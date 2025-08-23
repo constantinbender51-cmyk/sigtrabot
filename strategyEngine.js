@@ -4,6 +4,14 @@ import path from 'path';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { log } from './logger.js';
 import { calculateIndicatorSeries } from './indicators.js';
+                    // already present
+function latest10ClosedTrades() {
+  if (!fs.existsSync('./trades.json')) return [];
+  try {
+    const all = JSON.parse(fs.readFileSync('./trades.json', 'utf8'));
+    return all.filter(t => t.exitTime).slice(-10);
+  } catch { return []; }
+}
 
 const loadLatestBlockReport = () => {
   const dir = './block-reports';
@@ -45,10 +53,15 @@ export class StrategyEngine {
   }
 
   _prompt(market, block) {
+      const recent = latest10ClosedTrades();     // *** NEW ***
+    
     return `
 You are an expert strategist for PF_XBTUSD. Use step by step math, not narrative fluff.
 Last 10-trade summary:
 ${block ? JSON.stringify(block, null, 2) : 'N/A'}
+
+Last 10 closed trades:
+${JSON.stringify(recent, null, 2)}
 
 Market data (720 1-h candles):
 ${JSON.stringify(market, null, 2)}
