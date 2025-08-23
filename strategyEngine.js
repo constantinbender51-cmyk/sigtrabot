@@ -62,9 +62,6 @@ function buildLast10ClosedFromRawFills(rawFills, n = 10) {
   }
 
   const last10 = closed.slice(-n).reverse();
-  console.log('--- last10 closed trades ----------------------------------');
-  console.table(last10);
-  console.log('----------------------------------------------------------');
   return last10;
 }
 
@@ -73,7 +70,6 @@ export class StrategyEngine {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const safety = [{ category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }];
     this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite', safetySettings: safety });
-    log.info('StrategyEngine ready.');
   }
 
   async _callWithRetry(prompt, max = 4) {
