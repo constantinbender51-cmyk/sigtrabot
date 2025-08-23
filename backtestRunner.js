@@ -142,7 +142,7 @@ export class BacktestRunner {
 
     const elapsed = Date.now() - t0;
     const delay   = this.cfg.MIN_SECONDS_BETWEEN_CALLS * 1000 - elapsed;
-    console.log(`WAITING ${delay}s...`);
+    console.log(`WAITING ${delay/1000}s...`);
     if (delay > 0) await new Promise(r => setTimeout(r, delay));
   }
 
