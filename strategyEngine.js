@@ -188,14 +188,13 @@ export class StrategyEngine {
   const volPct = (atr14 / latest * 100).toFixed(2);
 
   const last10 = market.fills?.fills
-    ? buildLast10ClosedFromRawFills(market.fills.fills, 10)
-    : readLast10ClosedTradesFromFile();
-    console.log('--- last10 closed trades ----------------------------------');
-    console.table(last10);
-    console.log('----------------------------------------------------------');
-    console.log('source =', market.fills?.fills ? 'LIVE (Kraken fills)' : 'BACKTEST (trades.json)');
-    console.log('raw length =', market.fills?.fills?.length ?? 0);
-    console.log('file length =', readLast10ClosedTradesFromFile().length);
+  ? buildLast10ClosedFromRawFills(market.fills.fills, 10)
+  : readLast10ClosedTradesFromFile();
+
+console.log('--- last10 closed trades ----------------------------------');
+console.table(last10);
+console.log('----------------------------------------------------------');
+
     
     
   return `
