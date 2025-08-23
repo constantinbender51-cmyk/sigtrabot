@@ -7,7 +7,6 @@ export class BacktestExecutionHandler {
     constructor(initialBalance) {
         this.balance = initialBalance;
         this.trades = [];
-        log.info(`[BACKTEST] Initialized BacktestExecutionHandler with balance: $${this.balance}`);
     }
 
     placeOrder({ signal, params, entryPrice, entryTime, reason }) {
@@ -20,8 +19,6 @@ export class BacktestExecutionHandler {
             exitTime: null, exitPrice: null, pnl: 0,
         };
         this.trades.push(trade);
-        log.info(`[BACKTEST] ---- TRADE OPENED ----`);
-        log.info(`[BACKTEST] Signal: ${signal} | Entry: ${entryPrice}`);
     }
 
     getOpenTrade() {
@@ -35,7 +32,6 @@ export class BacktestExecutionHandler {
         trade.exitPrice = exitPrice;
         trade.exitTime = exitTime;
         trade.pnl = pnl;
-        log.info(`[BACKTEST] ---- TRADE CLOSED ----`);
         log.info(`[BACKTEST] P&L: $${pnl.toFixed(2)} | New Balance: $${this.balance.toFixed(2)}`);
     }
 
