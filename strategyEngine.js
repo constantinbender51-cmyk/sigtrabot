@@ -31,7 +31,7 @@ export class StrategyEngine {
   constructor() {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const safety = [{ category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }];
-    this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', safetySettings: safety });
+    this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite', safetySettings: safety });
     log.info('StrategyEngine ready.');
   }
 
