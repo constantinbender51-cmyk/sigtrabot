@@ -164,6 +164,8 @@ export class StrategyEngine {
   }
 
   _prompt(market) {
+  console.log('[PROMPT] received market keys:', Object.keys(market));
+  console.log('[PROMPT] market.fills ===', market.fills);
   const closes = market.ohlc.map(c => c.close);
   const latest = closes.at(-1);
   const sma20  = closes.slice(-20).reduce((a, b) => a + b, 0) / 20;
