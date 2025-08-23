@@ -213,7 +213,7 @@ Return JSON:{"signal":"LONG|SHORT|HOLD","confidence":0-100,"stop_loss_distance_i
 
   async generateSignal(marketData) {
     if (!marketData?.ohlc?.length) return this._fail('No OHLC');
-    const prompt = this._prompt({ ohlc: marketData.ohlc });
+    const prompt = this._prompt(marketData);
     const { ok, text } = await this._callWithRetry(prompt);
     if (!ok) return this._fail('Bad AI response');
 
