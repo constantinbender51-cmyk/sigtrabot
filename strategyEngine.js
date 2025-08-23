@@ -10,41 +10,43 @@ const readLast10ClosedTradesFromFile = () => {
                 .slice(-10);
   } catch { return []; }
 };
-/**
- * Returns the last N *closed* trades from Kraken’s raw fills.
- * Kraken returns newest→oldest; we want newest-last in the prompt.
- * @param {Array<Object>} rawFills – market.fills.fills
- * @param {number} n               – default 10
- */
 function buildLast10ClosedFromRawFills(rawFills, n = 10) {
-  if (!Array.isArray(rawFills) || rawFills.length === 0) return [];
+  // 0️⃣  raw payload sanity check
+  console.log('[FIFO-DEBUG] rawFills.length =', rawFills?.length ?? 0);
 
-  // 1) newest→oldest  →  oldest→newest
-  const fills = [...rawFills].reverse();
+  if (!Array.isArray(rawFills) || rawFills.length === 0) {
+    console.log('[FIFO-DEBUG] no fills → returning []');
+    return [];
+  }
 
-  const queue = [];   // open positions  {side, entryTime, entryPrice, size}
-  const closed = [];  // completed round-turns
+  // 1️⃣  show first & last timestamp so you see the order
+  console.log('[FIFO-DEBUG] first fillTime =', rawFills[0].fillTime);
+  console.log('[FIFO-DEBUG] last  fillTime =', rawFills.at(-1).fillTime);
+
+  const fills = [...rawFills].reverse(); // newest→oldest → oldest→newest
+  console.log('[FIFO-DEBUG] reversed fill count =', fills.length);
+
+  const queue = [];
+  const closed = [];
 
   for (const f of fills) {
     const side = f.side === 'buy' ? 'LONG' : 'SHORT';
+    console.log('[FIFO-DEBUG] processing', f.fillTime, f.side, f.size, '@', f.price);
 
-    // opening leg
+    // opening logic
     if (!queue.length || queue.at(-1).side === side) {
-      queue.push({
-        side,
-        entryTime: f.fillTime,
-        entryPrice: f.price,
-        size: f.size
-      });
+      queue.push({ side, entryTime: f.fillTime, entryPrice: f.price, size: f.size });
+      console.log('[FIFO-DEBUG]  -> OPEN', { side, size: f.size, price: f.price });
       continue;
     }
 
-    // closing leg(s)
+    // closing logic
     let remaining = f.size;
     while (remaining > 0 && queue.length && queue[0].side !== side) {
       const open = queue.shift();
       const match = Math.min(remaining, open.size);
 
+      const pnl = (f.price - open.entryPrice) * match * (open.side === 'LONG' ? 1 : -1);
       closed.push({
         side: open.side,
         entryTime: open.entryTime,
@@ -52,21 +54,29 @@ function buildLast10ClosedFromRawFills(rawFills, n = 10) {
         exitTime: f.fillTime,
         exitPrice: f.price,
         size: match,
-        pnl: (f.price - open.entryPrice) * match * (open.side === 'LONG' ? 1 : -1)
+        pnl
+      });
+
+      console.log('[FIFO-DEBUG]  -> CLOSE', {
+        side: open.side,
+        entryPrice: open.entryPrice,
+        exitPrice: f.price,
+        size: match,
+        pnl
       });
 
       open.size -= match;
       remaining -= match;
-      if (open.size > 0) queue.unshift(open); // partial still open
+      if (open.size > 0) queue.unshift(open);
     }
 
-    // excess becomes a new position
     if (remaining > 0) {
       queue.push({ side, entryTime: f.fillTime, entryPrice: f.price, size: remaining });
+      console.log('[FIFO-DEBUG]  -> EXCESS OPEN', { side, size: remaining });
     }
   }
 
-  // 2) oldest→newest  →  newest-last for prompt
+  console.log('[FIFO-DEBUG] closed trades =', closed.length);
   return closed.slice(-n).reverse();
 }
 
