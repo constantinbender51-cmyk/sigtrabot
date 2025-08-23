@@ -56,11 +56,11 @@ export class StrategyEngine {
       const recent = latest10ClosedTrades();     // *** NEW ***
     
     return `
-You are an expert strategist for PF_XBTUSD. Use step-by-step math, not narrative fluff to derive your decisions.
-Last 10 closed trades:
+You are an expert strategist for PF_XBTUSD. Use step-by-step math, not narrative fluff.
+Learn from Last 10 closed trades:
 ${JSON.stringify(recent, null, 2)}
 
-Market data (720 1-h candles):
+Analyze Market data (720 1-h candles):
 ${JSON.stringify(market, null, 2)}
 
 A past test run analysis has resulted in the following suggestions:
@@ -74,11 +74,11 @@ A past test run analysis has resulted in the following suggestions:
     
 Return **only** this JSON:
 {
-  "signal": "LONG|SHORT|HOLD", //Holding period until retest: 60 minutes
-  "confidence": <0-100>, 
-  "stop_loss_distance_in_usd": <number>, //0 if HOLD 
-  "take_profit_distance_in_usd": <number>, //0 if HOLD 
-  "reason": "<string>" //YOUR ENTIRE LOGIC GOES HERE
+  "signal": "LONG|SHORT|HOLD", //HOLD returns in 60 minutes, SHORT/LONG returns after stoploss/takeprofit hits.
+  "confidence": <0-100>, //Derive this by calculation 
+  "stop_loss_distance_in_usd": <number>, //0 if HOLD, calculate based on target
+  "take_profit_distance_in_usd": <number>, //||
+  "reason": "<string>" //YOUR ENTIRE THOUGHT PROCCESS STEP BY STEP
 }`;
   }
 
