@@ -57,9 +57,6 @@ export class StrategyEngine {
     
     return `
 You are an expert strategist for PF_XBTUSD. Use step-by-step math, not narrative fluff.
-Last 10-trade summary:
-${block ? JSON.stringify(block, null, 2) : 'N/A'}
-
 Last 10 closed trades:
 ${JSON.stringify(recent, null, 2)}
 
@@ -68,11 +65,11 @@ ${JSON.stringify(market, null, 2)}
 
 Return **only** this JSON:
 {
-  "signal": "LONG|SHORT|HOLD", //HOLD waits 60 minutes ans asks again. LONG and SHORT waits till the stop loss or take profit concludes the trade and asks again.
+  "signal": "LONG|SHORT|HOLD", //HOLD waits 60 minutes ans asks again. LONG and SHORT waits till the stop loss or take profit concludes the cycle and asks again.
   "confidence": <0-100>, //if uncertain, hold
   "stop_loss_distance_in_usd": <number>, 
   "take_profit_distance_in_usd": <number>, 
-  "reason": "<string>" //Present mathematical steps, and conclusion.
+  "reason": "<string>" //Put step by step math here.
 }`;
   }
 
