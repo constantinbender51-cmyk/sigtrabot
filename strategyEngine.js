@@ -11,35 +11,24 @@ const readLast10ClosedTradesFromFile = () => {
   } catch { return []; }
 };
 /**
- * Returns the last 10 *closed* round-turn trades
- * computed from Kraken’s raw “fills” payload.
- * Each fill object must contain:
- *   { side: 'buy' | 'sell', price: number, size: number, fillTime: string }
- *
- * @param {Array<Object>} rawFills  – Kraken getFills().fills
- * @param {number}        n         – how many trades to return (default 10)
- * @returns {Array<Object>}         – newest last, shape:
- *   {
- *     side: 'LONG' | 'SHORT',
- *     entryTime: '...',
- *     exitTime:  '...',
- *     entryPrice: 12345,
- *     exitPrice:  12346,
- *     size: 0.001,
- *     pnl: 0.12
- *   }
+ * Returns the last N *closed* trades from Kraken’s raw fills.
+ * Kraken returns newest→oldest; we want newest-last in the prompt.
+ * @param {Array<Object>} rawFills – market.fills.fills
+ * @param {number} n               – default 10
  */
 function buildLast10ClosedFromRawFills(rawFills, n = 10) {
   if (!Array.isArray(rawFills) || rawFills.length === 0) return [];
 
-  const queue = [];   // running open positions  {side, entryTime, entryPrice, size}
+  // 1) newest→oldest  →  oldest→newest
+  const fills = [...rawFills].reverse();
+
+  const queue = [];   // open positions  {side, entryTime, entryPrice, size}
   const closed = [];  // completed round-turns
 
-  // oldest → newest so we can match FIFO properly
-  for (const f of [...rawFills].reverse()) {
+  for (const f of fills) {
     const side = f.side === 'buy' ? 'LONG' : 'SHORT';
 
-    // opening trade
+    // opening leg
     if (!queue.length || queue.at(-1).side === side) {
       queue.push({
         side,
@@ -50,11 +39,11 @@ function buildLast10ClosedFromRawFills(rawFills, n = 10) {
       continue;
     }
 
-    // closing trade(s)
+    // closing leg(s)
     let remaining = f.size;
     while (remaining > 0 && queue.length && queue[0].side !== side) {
       const open = queue.shift();
-      const fillQty = Math.min(remaining, open.size);
+      const match = Math.min(remaining, open.size);
 
       closed.push({
         side: open.side,
@@ -62,28 +51,23 @@ function buildLast10ClosedFromRawFills(rawFills, n = 10) {
         entryPrice: open.entryPrice,
         exitTime: f.fillTime,
         exitPrice: f.price,
-        size: fillQty,
-        pnl: (f.price - open.entryPrice) * fillQty * (open.side === 'LONG' ? 1 : -1)
+        size: match,
+        pnl: (f.price - open.entryPrice) * match * (open.side === 'LONG' ? 1 : -1)
       });
 
-      open.size -= fillQty;
-      remaining -= fillQty;
-
+      open.size -= match;
+      remaining -= match;
       if (open.size > 0) queue.unshift(open); // partial still open
     }
 
     // excess becomes a new position
     if (remaining > 0) {
-      queue.push({
-        side,
-        entryTime: f.fillTime,
-        entryPrice: f.price,
-        size: remaining
-      });
+      queue.push({ side, entryTime: f.fillTime, entryPrice: f.price, size: remaining });
     }
   }
 
-  return closed.slice(-n).reverse(); // newest last
+  // 2) oldest→newest  →  newest-last for prompt
+  return closed.slice(-n).reverse();
 }
 
 function buildLastNClosedTrades(marketData, n = 10) {
