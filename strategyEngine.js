@@ -30,10 +30,19 @@ export class StrategyEngine {
         const text = res.response.text?.();
         if (!text?.length) throw new Error('Empty response');
         if (this._insideGenerateSignal) {
-          this._signalMemory.push(text);
-          if (this._signalMemory.length > 50) 
-            this._signalMemory.shift(); // keep last 50
-        }
+  const match = text.match(/\{.*\}/s);
+  if (match) {
+    try {
+      const parsed = JSON.parse(match[0]);
+      this._signalMemory.push(parsed);
+      if (this._signalMemory.length > 10)
+        this._signalMemory.shift(); // keep last 50
+    } catch {
+      // ignore malformed JSON
+    }
+  }
+}
+
             
         log.info(`[GEMINI_RESPONSE_ATTEMPT_${i}]:\n${text}\n---`);
         return { ok: true, text };
@@ -54,14 +63,13 @@ You are an expert strategist for PF_XBTUSD. Use step-by-step math, not narrative
 Last 10 closed trades:
 ${JSON.stringify(recent, null, 2)}
 
+${this._signalMemory.length ? `
+Previous 10 AI JSON signals:
+${JSON.stringify(this._signalMemory.slice(-50), null, 2)}
+` : ''}
+
 Market data (720 1-h candles, indicators where apply):
 ${JSON.stringify(market, null, 2)}
-
-${this._signalMemory.length ? `
-Previous reasoning chain (oldest → newest):
-${this._signalMemory.map((r, i) => `[${i + 1}] 
-${r}`).join('\n\n')}
-` : ''}
     
 Return somewhere in your response this JSON:
 {
