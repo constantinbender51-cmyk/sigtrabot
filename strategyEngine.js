@@ -32,6 +32,8 @@ export class StrategyEngine {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const safety = [{ category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }];
     this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite', safetySettings: safety });
+    this._signalMemory = [];
+    this._insideGenerateSignal = false;
     log.info('StrategyEngine ready.');
   }
 
@@ -41,7 +43,12 @@ export class StrategyEngine {
         const res = await this.model.generateContent(prompt);
         const text = res.response.text?.();
         if (!text?.length) throw new Error('Empty response');
-
+        if (this._insideGenerateSignal) {
+          this._signalMemory.push(text);
+          if (this._signalMemory.length > 50) 
+            this._signalMemory.shift(); // keep last 50
+        }
+            
         log.info(`[GEMINI_RESPONSE_ATTEMPT_${i}]:\n${text}\n---`);
         return { ok: true, text };
       } catch (err) {
@@ -62,6 +69,11 @@ ${JSON.stringify(recent, null, 2)}
 
 Analyze Market data (720 1-h candles)(timestamp: number of seconds since 00:00:00 UTC on 1 January 1970, last indicator entry corresponds to the current date/last ohlc data entry):
 ${JSON.stringify(market, null, 2)}
+${this._signalMemory.length ? `
+Previous reasoning chain (oldest → newest):
+${this._signalMemory.map((r, i) => `[${i + 1}] 
+${r}`).join('\n\n')}
+` : ''}
 
 A past test run analysis has resulted in the following suggestions:
     "**Implement RSI Divergence Filters or Dynamic Thresholds:** Instead of merely tolerating extreme RSI, introduce a filter for RSI divergence (e.g., bearish divergence for LONGs, bullish divergence for SHORTs) as a stronger warning signal. Alternatively, implement dynamic RSI thresholds or stricter limits for entries when RSI is beyond 80/20, requiring additional confirmation for trades.",
@@ -107,8 +119,10 @@ Return **only** this JSON:
     /* -------------------------------------- */
 
     const prompt  = this._prompt(context, loadLatestBlockReport());
+    this._insideGenerateSignal = true;
 
     const { ok, text, error } = await this._callWithRetry(prompt);
+    this._insideGenerateSignal = false;
     if (!ok) return this._fail(error.message);
 
     try {
