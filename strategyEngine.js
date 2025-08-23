@@ -63,34 +63,27 @@ export class StrategyEngine {
       const recent = latest10ClosedTrades();     // *** NEW ***
     
     return `
-You are an expert strategist for PF_XBTUSD. Use step-by-step math, not narrative fluff.
-Learn from Last 10 closed trades:
+
+You are an expert strategist for PF_XBTUSD. Use step-by-step math, not narrative fluff to derive a trade setup. You will be called every 60 minutes until a short or long order has been placed and their corresponding stoploss and takeprofit orders. After those have been triggered you will be called again until a new order has been placed.
+Last 10 closed trades:
 ${JSON.stringify(recent, null, 2)}
 
-Analyze Market data (720 1-h candles)(timestamp: number of seconds since 00:00:00 UTC on 1 January 1970, last indicator entry corresponds to the current date/last ohlc data entry):
+Market data (720 1-h candles, indicators where apply):
 ${JSON.stringify(market, null, 2)}
+
 ${this._signalMemory.length ? `
 Previous reasoning chain (oldest → newest):
 ${this._signalMemory.map((r, i) => `[${i + 1}] 
 ${r}`).join('\n\n')}
 ` : ''}
-
-A past test run analysis has resulted in the following suggestions:
-    "**Implement RSI Divergence Filters or Dynamic Thresholds:** Instead of merely tolerating extreme RSI, introduce a filter for RSI divergence (e.g., bearish divergence for LONGs, bullish divergence for SHORTs) as a stronger warning signal. Alternatively, implement dynamic RSI thresholds or stricter limits for entries when RSI is beyond 80/20, requiring additional confirmation for trades.",
-
-    "**Enhance Stop-Loss Logic with Market Structure:** The current fixed ATR-based stop-loss appears vulnerable. Consider integrating market structure (e.g., placing stops below significant swing lows for LONGs or above swing highs for SHORTs), potentially combined with ATR, to make stop-losses more robust against noise and temporary reversals.",
-
-    "**Refine Volume Analysis at Extremes:** While volume is used as a supportive indicator, investigate volume patterns more critically at extreme price points or when RSI is overbought/oversold. High volume on a reversal candle, or a decrease in volume on continuation candles after a strong impulse, could serve as a pre-warning for trend exhaustion.",
-
-    "**Consider Partial Profit Taking or Trailing Stops:** For trades that move quickly into profit (e.g., 1R or 1.5R gain), consider taking partial profits or implementing a trailing stop-loss to protect capital and reduce risk exposure, especially in high-momentum trades that might eventually face a sharp correction.
     
-Return **only** this JSON:
+Return somewhere in your response this JSON:
 {
-  "signal": "LONG|SHORT|HOLD", //HOLD returns in 60 minutes, SHORT/LONG returns after stoploss/takeprofit hits.
+  "signal": "LONG|SHORT|HOLD", 
   "confidence": <0-100>, //Derive this by calculation 
   "stop_loss_distance_in_usd": <number>, //0 if HOLD, calculate based on target
-  "take_profit_distance_in_usd": <number>, //||
-  "reason": "<string>" //YOUR ENTIRE THOUGHT PROCCESS STEP BY STEP
+  "take_profit_distance_in_usd": <number>, //0 if HOLD, calculate this based on target
+  "reason": "<string>" 
 }`;
   }
 
