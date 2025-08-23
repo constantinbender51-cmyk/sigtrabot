@@ -13,20 +13,6 @@ function latest10ClosedTrades() {
   } catch { return []; }
 }
 
-const loadLatestBlockReport = () => {
-  const dir = './block-reports';
-  if (!fs.existsSync(dir)) return null;
-  const f = fs.readdirSync(dir)
-               .filter(f => f.endsWith('.json'))
-               .sort((a, b) => +a - +b)
-               .pop();
-  try {
-    return JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
-  } catch {
-    return null;
-  }
-};
-
 export class StrategyEngine {
   constructor() {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
