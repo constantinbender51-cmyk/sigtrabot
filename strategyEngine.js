@@ -46,7 +46,7 @@ export class StrategyEngine {
 
   _prompt(market, block) {
     return `
-You are an expert strategist for PF_XBTUSD.
+You are an expert strategist for PF_XBTUSD. Use step by step math, not narrative fluff.
 Last 10-trade summary:
 ${block ? JSON.stringify(block, null, 2) : 'N/A'}
 
