@@ -37,23 +37,45 @@ export class StrategyEngine {
     }
   }
 
-  _prompt(market) {
+    _prompt(market) {
     const recent = latest10ClosedTrades();
+    const closes = market.ohlc.map(c => c.close);
+    const latest = closes[closes.length - 1];
+    const sma20  = closes.slice(-20).reduce((a, b) => a + b, 0) / 20;
+    const atr14  = (() => {                          // 14-period ATR approximation
+      const trs = [];
+      for (let i = 1; i < 15; i++) {
+        const h = market.ohlc[market.ohlc.length - i].high;
+        const l = market.ohlc[market.ohlc.length - i].low;
+        const pc = market.ohlc[market.ohlc.length - i - 1]?.close ?? h;
+        trs.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+      }
+      return trs.reduce((a, b) => a + b, 0) / 14;
+    })();
+
+    const momentum = (latest - sma20) / sma20;      // % deviation from SMA
+    const volatility = atr14 / latest;               // ATR as % of price
+    const edgeScore = (momentum * 100).toFixed(2);   // +ve bullish, -ve bearish
+
     return `
 You are an expert strategist for PF_XBTUSD. Use step-by-step math, not narrative fluff to derive a trade setup. You will be called every 60 minutes until a short or long order has been placed and their corresponding stoploss and takeprofit orders. After those have been triggered you will be called again until a new order has been placed.
+
 Last 10 closed trades:
 ${JSON.stringify(recent, null, 2)}
 
-Market data (720 1-h candles, indicators where apply):
-${JSON.stringify(market, null, 2)}
+Market data (720 1-h candles):
+- Latest close: ${latest}
+- 20-SMA: ${sma20.toFixed(2)}
+- Edge score (momentum): ${edgeScore}%
+- 14-ATR (% of price): ${(volatility * 100).toFixed(2)}%
 
 Return somewhere in your response this JSON:
 {
-  "signal": "LONG|SHORT|HOLD", 
+  "signal": "LONG|SHORT|HOLD",
   "confidence": <0-100>,
   "stop_loss_distance_in_usd": <number>,
   "take_profit_distance_in_usd": <number>,
-  "reason": "<string>" 
+  "reason": "<string>"
 }`;
   }
 
