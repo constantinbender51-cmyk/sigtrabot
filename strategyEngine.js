@@ -92,7 +92,7 @@ Return somewhere in your response this JSON:
     const ind = calculateIndicatorSeries(marketData.ohlc);
     if (!ind) return this._fail('Indicator error');
 
-    const context = { ohlc: marketData.ohlc, indicators: ind };
+    const context = { ohlc: marketData.ohlc, indicators: [] };
     const prompt  = this._prompt(context, loadLatestBlockReport());
     this._insideGenerateSignal = true;
 
