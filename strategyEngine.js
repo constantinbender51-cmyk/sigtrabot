@@ -63,6 +63,15 @@ ${JSON.stringify(recent, null, 2)}
 Market data (720 1-h candles):
 ${JSON.stringify(market, null, 2)}
 
+A past test run analysis has resulted in the following suggestions:
+    "**Implement RSI Divergence Filters or Dynamic Thresholds:** Instead of merely tolerating extreme RSI, introduce a filter for RSI divergence (e.g., bearish divergence for LONGs, bullish divergence for SHORTs) as a stronger warning signal. Alternatively, implement dynamic RSI thresholds or stricter limits for entries when RSI is beyond 80/20, requiring additional confirmation for trades.",
+
+    "**Enhance Stop-Loss Logic with Market Structure:** The current fixed ATR-based stop-loss appears vulnerable. Consider integrating market structure (e.g., placing stops below significant swing lows for LONGs or above swing highs for SHORTs), potentially combined with ATR, to make stop-losses more robust against noise and temporary reversals.",
+
+    "**Refine Volume Analysis at Extremes:** While volume is used as a supportive indicator, investigate volume patterns more critically at extreme price points or when RSI is overbought/oversold. High volume on a reversal candle, or a decrease in volume on continuation candles after a strong impulse, could serve as a pre-warning for trend exhaustion.",
+
+    "**Consider Partial Profit Taking or Trailing Stops:** For trades that move quickly into profit (e.g., 1R or 1.5R gain), consider taking partial profits or implementing a trailing stop-loss to protect capital and reduce risk exposure, especially in high-momentum trades that might eventually face a sharp correction.
+    
 Return **only** this JSON:
 {
   "signal": "LONG|SHORT|HOLD", //Holding period until retest: 60 minutes
