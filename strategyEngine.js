@@ -193,6 +193,10 @@ export class StrategyEngine {
     console.log('--- last10 closed trades ----------------------------------');
     console.table(last10);
     console.log('----------------------------------------------------------');
+    console.log('source =', market.fills?.fills ? 'LIVE (Kraken fills)' : 'BACKTEST (trades.json)');
+    console.log('raw length =', market.fills?.fills?.length ?? 0);
+    console.log('file length =', readLast10ClosedTradesFromFile().length);
+    
     
   return `
 Expert PF_XBTUSD strategist: every 60 min output LONG/SHORT/HOLD JSON with calculated stops/targets; repeat after fills.
