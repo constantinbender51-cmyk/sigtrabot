@@ -3,6 +3,9 @@ import fs from 'fs';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { log } from './logger.js';
 
+const BOT_START_TIME = new Date().toISOString();   // UTC “now” when module loads
+
+
 const readLast10ClosedTradesFromFile = () => {
   try {
     return JSON.parse(fs.readFileSync('./trades.json', 'utf8'))
@@ -14,26 +17,31 @@ const readLast10ClosedTradesFromFile = () => {
 function buildLast10ClosedFromRawFills(rawFills, n = 10) {
   if (!Array.isArray(rawFills) || rawFills.length === 0) return [];
 
-  const fills = [...rawFills].reverse();           // newest→oldest → oldest→newest
+  // 1️⃣  discard everything earlier than bot launch
+  const eligible = rawFills.filter(
+    f => new Date(f.fillTime) >= new Date(BOT_START_TIME)
+  );
+  console.log('[FIFO-DEBUG] after start-time filter =', eligible.length);
+
+  if (eligible.length === 0) return [];
+
+  const fills = [...eligible].reverse(); // oldest→newest
   const queue = [];
   const closed = [];
 
+  // 2️⃣  rest of FIFO logic unchanged …
   for (const f of fills) {
     const side = f.side === 'buy' ? 'LONG' : 'SHORT';
-
-    // opening leg
     if (!queue.length || queue.at(-1).side === side) {
       queue.push({ side, entryTime: f.fillTime, entryPrice: f.price, size: f.size });
       continue;
     }
 
-    // closing leg(s)
     let remaining = f.size;
     while (remaining > 0 && queue.length && queue[0].side !== side) {
       const open = queue.shift();
       const match = Math.min(remaining, open.size);
       const pnl = (f.price - open.entryPrice) * match * (open.side === 'LONG' ? 1 : -1);
-
       closed.push({
         side: open.side,
         entryTime: open.entryTime,
@@ -53,7 +61,7 @@ function buildLast10ClosedFromRawFills(rawFills, n = 10) {
     }
   }
 
-  const last10 = closed.slice(-n).reverse(); // newest-last
+  const last10 = closed.slice(-n).reverse();
   console.log('--- last10 closed trades ----------------------------------');
   console.table(last10);
   console.log('----------------------------------------------------------');
