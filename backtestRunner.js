@@ -110,6 +110,7 @@ export class BacktestRunner {
     this.exec  = new BacktestExecutionHandler(cfg.INITIAL_BALANCE);
     this.strat = new StrategyEngine();
     this.risk  = new RiskManager({ leverage: 10, marginBuffer: 0.01 });
+    this.closedTrades = [];   // running list of finished trades
     log.info('BacktestRunner initialized.');
   }
 
@@ -163,7 +164,14 @@ export class BacktestRunner {
       const date = new Date(candle.timestamp * 1000).toISOString();
       log.info(`[EXIT] [${date}] ${exitReason} triggered for ${t.signal} @ ${exitPrice}`);
       this.exec.closeTrade(t, exitPrice, candle.timestamp);
-      emitBlockReportIfNeeded(this.exec.getTrades().filter(tr => tr.exitTime), this.cfg);
+// --- append this single closed trade to the file ---
+const all = fs.existsSync('./trades.json')
+  ? JSON.parse(fs.readFileSync('./trades.json', 'utf8'))
+  : [];
+all.push(trade);                        // the trade we just closed
+fs.writeFileSync('./trades.json', JSON.stringify(all, null, 2));
+
+emitBlockReportIfNeeded(all, this.cfg); // block-report logic stays the same
     }
   }
 
