@@ -58,16 +58,19 @@ export class StrategyEngine {
     const edgeScore = (momentum * 100).toFixed(2);   // +ve bullish, -ve bearish
 
     return `
-You are an expert strategist for PF_XBTUSD. Use step-by-step math, not narrative fluff to derive a trade setup. You will be called every 60 minutes until a short or long order has been placed and their corresponding stoploss and takeprofit orders. After those have been triggered you will be called again until a new order has been placed.
-
-Last 10 closed trades:
-${JSON.stringify(recent, null, 2)}
+You are an expert strategist for PF_XBTUSD. Use step-by-step math, not narrative fluff to derive a trade setup. You will be called every 60 minutes until a short or long order has been placed. After their corresponding stoploss and takeprofit orders have been triggered you will be called again until a new order has been placed.
 
 Market data (720 1-h candles):
+${JSON.stringify(market.ohlc, null, 2)}
+
+Summary:
 - Latest close: ${latest}
 - 20-SMA: ${sma20.toFixed(2)}
 - Edge score (momentum): ${edgeScore}%
 - 14-ATR (% of price): ${(volatility * 100).toFixed(2)}%
+
+Last 10 closed trades:
+${JSON.stringify(recent, null, 2)}
 
 Return somewhere in your response this JSON:
 {
