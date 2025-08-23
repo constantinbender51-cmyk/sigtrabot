@@ -120,7 +120,7 @@ export class BacktestRunner {
   }
 
   async _handleSignal(market, candle, apiCalls) {
-    log.info(`[BACKTEST] [Call #${apiCalls}/${this.cfg.MAX_API_CALLS}] Analyzing crossover event...`);
+    log.info(`[BACKTEST] [Call #${apiCalls}/${this.cfg.MAX_API_CALLS}] Gemini 2.5 flash lite`);
     const t0 = Date.now();
 
     const sig = await this.strat.generateSignal(market);
