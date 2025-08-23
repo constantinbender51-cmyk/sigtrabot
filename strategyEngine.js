@@ -1,4 +1,4 @@
-// strategyEngine.js  —  stripped to essentials, ONLY buildLast10ClosedFromRawFills keeps debug logs
+// strategyEngine.js  —  only buildLast10ClosedFromRawFills keeps debug logs
 import fs from 'fs';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { log } from './logger.js';
@@ -12,29 +12,28 @@ const readLast10ClosedTradesFromFile = () => {
 };
 
 function buildLast10ClosedFromRawFills(rawFills, n = 10) {
-  if (!Array.isArray(rawFills) || rawFills.length === 0) {
-    return [];
-  }
+  if (!Array.isArray(rawFills) || rawFills.length === 0) return [];
 
-  const fills = [...rawFills].reverse(); // newest→oldest → oldest→newest
-  
+  const fills = [...rawFills].reverse();           // newest→oldest → oldest→newest
   const queue = [];
   const closed = [];
 
   for (const f of fills) {
     const side = f.side === 'buy' ? 'LONG' : 'SHORT';
-    // opening
+
+    // opening leg
     if (!queue.length || queue.at(-1).side === side) {
       queue.push({ side, entryTime: f.fillTime, entryPrice: f.price, size: f.size });
       continue;
     }
 
-    // closing
+    // closing leg(s)
     let remaining = f.size;
     while (remaining > 0 && queue.length && queue[0].side !== side) {
       const open = queue.shift();
       const match = Math.min(remaining, open.size);
       const pnl = (f.price - open.entryPrice) * match * (open.side === 'LONG' ? 1 : -1);
+
       closed.push({
         side: open.side,
         entryTime: open.entryTime,
@@ -44,23 +43,21 @@ function buildLast10ClosedFromRawFills(rawFills, n = 10) {
         size: match,
         pnl
       });
-      console.log('[FIFO-DEBUG]  -> CLOSE', {
-        side: open.side, entryPrice: open.entryPrice, exitPrice: f.price, size: match, pnl
-      });
-
-      open.size -= match;
       remaining -= match;
+      open.size -= match;
       if (open.size > 0) queue.unshift(open);
     }
 
     if (remaining > 0) {
       queue.push({ side, entryTime: f.fillTime, entryPrice: f.price, size: remaining });
-      console.log('[FIFO-DEBUG]  -> EXCESS OPEN', { side, size: remaining });
     }
   }
 
-  console.log('[FIFO-DEBUG] closed trades =', closed.length);
-  return closed.slice(-n).reverse();
+  const last10 = closed.slice(-n).reverse(); // newest-last
+  console.log('--- last10 closed trades ----------------------------------');
+  console.table(last10);
+  console.log('----------------------------------------------------------');
+  return last10;
 }
 
 export class StrategyEngine {
