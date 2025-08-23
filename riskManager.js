@@ -6,7 +6,6 @@ export class RiskManager {
     constructor(config) {
         this.leverage = config.leverage || 10;
         this.marginBuffer = config.marginBuffer || 0.01;
-        log.info(`RiskManager V3 initialized. Leverage: ${this.leverage}x, Margin Buffer: ${this.marginBuffer * 100}%`);
     }
 
     /**
@@ -17,7 +16,6 @@ export class RiskManager {
      * @returns {object|null} The final trade parameters, or null if risk is invalid.
      */
     calculateTradeParameters(marketData, tradingSignal) {
-        log.info('[RISK] --- Starting AI-Driven Risk Calculation ---');
         const { balance, ohlc } = marketData;
         const lastPrice = ohlc[ohlc.length - 1].close;
 
@@ -64,9 +62,7 @@ export class RiskManager {
             takeProfit: parseFloat(takeProfitPrice.toFixed(2)),
         };
 
-        log.info(`[RISK] AI-Defined Plan: SL Distance: $${stop_loss_distance_in_usd}, TP Distance: $${take_profit_distance_in_usd}`);
-        log.info(`[RISK] Final Trade Params: ${JSON.stringify(tradeParams)}`);
-        log.info("[RISK] --- Risk Calculation Complete ---");
+        log.info(`[RISK] Final Trade Params: ${JSON.stringify(tradeParams, null, 2)}`);
         
         return tradeParams;
     }
