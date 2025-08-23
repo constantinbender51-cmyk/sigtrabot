@@ -93,24 +93,6 @@ Return somewhere in your response this JSON:
     if (!ind) return this._fail('Indicator error');
 
     const context = { ohlc: marketData.ohlc, indicators: ind };
-    /* ---------- NEW DEBUG OUTPUT ---------- */
-    const firstCandleTs = new Date(marketData.ohlc[0].timestamp * 1000).toISOString();
-    const lastCandleTs  = new Date(marketData.ohlc[marketData.ohlc.length - 1].timestamp * 1000).toISOString();
-    const numCandles    = marketData.ohlc.length;
-    const numIndicators = Object.keys(ind).length;
-
-    console.log('--- DEBUG: CANDLE RANGE ---');
-    console.log('First candle   :', firstCandleTs);
-    console.log('Last candle    :', lastCandleTs);
-    console.log('Candles count  :', numCandles);
-    console.log('Indicator count:', numIndicators);
-    console.log(
-      'Indicator sizes:',
-      Object.fromEntries(Object.entries(ind).map(([k, v]) => [k, Array.isArray(v) ? v.length : '-']))
-    );
-    console.log('----------------------------');
-    /* -------------------------------------- */
-
     const prompt  = this._prompt(context, loadLatestBlockReport());
     this._insideGenerateSignal = true;
 
