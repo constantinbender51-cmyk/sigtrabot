@@ -162,15 +162,13 @@ export class BacktestRunner {
     if (exitPrice) {
       const date = new Date(candle.timestamp * 1000).toISOString();
       log.info(`[EXIT] [${date}] ${exitReason} triggered for ${t.signal} @ ${exitPrice}`);
-      this.exec.closeTrade(t, exitPrice, candle.timestamp);
-// --- append this single closed trade to the file ---
-const all = fs.existsSync('./trades.json')
-  ? JSON.parse(fs.readFileSync('./trades.json', 'utf8'))
-  : [];
-all.push(trade);                        // the trade we just closed
-fs.writeFileSync('./trades.json', JSON.stringify(all, null, 2));
+    this.exec.closeTrade(t, exitPrice, candle.timestamp);
 
-emitBlockReportIfNeeded(all, this.cfg); // block-report logic stays the same
+// grab the *current* full list of trades and re-write the file
+const updated = this.exec.getTrades();   // includes the one we just closed
+fs.writeFileSync('./trades.json', JSON.stringify(updated, null, 2));
+
+emitBlockReportIfNeeded(updated.filter(tr => tr.exitTime), this.cfg);
     }
   }
 
