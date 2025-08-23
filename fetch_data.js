@@ -45,20 +45,17 @@ async function fetchBinanceOHLC(symbol, interval, startTime, limit) {
  * Main function to paginate through the Binance API and save all data.
  */
 async function fetchAllHistoricalData() {
-    log.info(`Starting historical data download for ${BINANCE_PAIR} from Binance...`);
-
+    
     let allCandles = [];
     let startTime = new Date(START_DATE).getTime();
     const endTime = Date.now(); // Fetch up to the current time
 
     while (startTime < endTime) {
-        log.info(`Fetching data from ${new Date(startTime).toISOString()}...`);
         
         try {
             const candles = await fetchBinanceOHLC(BINANCE_PAIR, INTERVAL, startTime, BATCH_SIZE);
 
             if (candles.length === 0) {
-                log.info("No more data returned from Binance. Ending fetch.");
                 break;
             }
 
@@ -66,8 +63,6 @@ async function fetchAllHistoricalData() {
 
             // The next request starts after the last candle we received.
             startTime = candles[candles.length - 1].timestamp * 1000 + 1; // Move to the next millisecond
-
-            log.info(`Fetched ${candles.length} candles. Total so far: ${allCandles.length}.`);
 
             // Be respectful to the API
             await new Promise(resolve => setTimeout(resolve, 500)); // 0.5-second delay is fine for Binance
@@ -77,8 +72,6 @@ async function fetchAllHistoricalData() {
             break;
         }
     }
-
-    log.info(`Download complete. Total candles fetched: ${allCandles.length}.`);
 
     if (allCandles.length > 0) {
         const uniqueCandles = Array.from(new Map(allCandles.map(c => [c.timestamp, c])).values());
@@ -90,7 +83,6 @@ async function fetchAllHistoricalData() {
         const json2csvParser = new Parser({ fields: ["timestamp", "open", "high", "low", "close", "volume"] });
         const csv = json2csvParser.parse(uniqueCandles);
         fs.writeFileSync(OUTPUT_FILE, csv);
-        log.info(`Data successfully saved to ${OUTPUT_FILE}`);
     }
 }
 
