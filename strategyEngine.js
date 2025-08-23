@@ -1,17 +1,15 @@
-// strategyEngine.js – print every generateContent request & response
+// strategyEngine.js
 import fs from 'fs';
-import path from 'path';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { log } from './logger.js';
-import { calculateIndicatorSeries } from './indicators.js';
 
-function latest10ClosedTrades() {
-  if (!fs.existsSync('./trades.json')) return [];
+const latest10ClosedTrades = () => {
   try {
-    const all = JSON.parse(fs.readFileSync('./trades.json', 'utf8'));
-    return all.filter(t => t.exitTime).slice(-10);
+    return JSON.parse(fs.readFileSync('./trades.json', 'utf8'))
+      .filter(t => t.exitTime)
+      .slice(-10);
   } catch { return []; }
-}
+};
 
 export class StrategyEngine {
   constructor() {
@@ -27,7 +25,7 @@ export class StrategyEngine {
         const res = await this.model.generateContent(prompt);
         const text = res.response.text?.();
         if (!text?.length) throw new Error('Empty response');
-        log.info(`[GEMINI_RESPONSE_ATTEMPT_${i}]:\n${text}\n---`);
+        log.info(`[GEMINI_ATTEMPT_${i}]:\n${text}\n---`);
         return { ok: true, text };
       } catch (err) {
         log.warn(`[GEMINI] Attempt ${i} failed: ${err.message}`);
@@ -37,69 +35,49 @@ export class StrategyEngine {
     }
   }
 
-    _prompt(market) {
-    const recent = latest10ClosedTrades();
+  _prompt(market) {
     const closes = market.ohlc.map(c => c.close);
-    const latest = closes[closes.length - 1];
+    const latest = closes.at(-1);
     const sma20  = closes.slice(-20).reduce((a, b) => a + b, 0) / 20;
-    const atr14  = (() => {                          // 14-period ATR approximation
+    const atr14  = (() => {
       const trs = [];
       for (let i = 1; i < 15; i++) {
-        const h = market.ohlc[market.ohlc.length - i].high;
-        const l = market.ohlc[market.ohlc.length - i].low;
-        const pc = market.ohlc[market.ohlc.length - i - 1]?.close ?? h;
+        const h  = market.ohlc.at(-i).high;
+        const l  = market.ohlc.at(-i).low;
+        const pc = market.ohlc.at(-i - 1)?.close ?? h;
         trs.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
       }
       return trs.reduce((a, b) => a + b, 0) / 14;
     })();
 
-    const momentum = (latest - sma20) / sma20;      // % deviation from SMA
-    const volatility = atr14 / latest;               // ATR as % of price
-    const edgeScore = (momentum * 100).toFixed(2);   // +ve bullish, -ve bearish
+    const momPct = ((latest - sma20) / sma20 * 100).toFixed(2);
+    const volPct = (atr14 / latest * 100).toFixed(2);
 
     return `
-You are an expert strategist for PF_XBTUSD. Use step-by-step math, not narrative fluff to derive a trade setup. You will be called every 60 minutes until a short or long order has been placed. After their corresponding stoploss and takeprofit orders have been triggered you will be called again until a new order has been placed.
+Expert PF_XBTUSD strategist: every 60 min output LONG/SHORT/HOLD JSON with calculated stops/targets; repeat after fills.
 
-Market data (720 1-h candles):
-${JSON.stringify(market.ohlc, null, 2)}
-
+Candles (720×1h): ${JSON.stringify(market.ohlc)}
 Summary:
-- Latest close: ${latest}
-- 20-SMA: ${sma20.toFixed(2)}
-- Edge score (momentum): ${edgeScore}%
-- 14-ATR (% of price): ${(volatility * 100).toFixed(2)}%
+- lastClose=${latest}
+- 20SMA=${sma20.toFixed(2)}
+- momentum=${momPct}%
+- 14ATR=${volPct}%
 
-Last 10 closed trades:
-${JSON.stringify(recent, null, 2)}
+last10=${JSON.stringify(latest10ClosedTrades())}
 
-Return somewhere in your response this JSON:
-{
-  "signal": "LONG|SHORT|HOLD",
-  "confidence": <0-100>,
-  "stop_loss_distance_in_usd": <number>,
-  "take_profit_distance_in_usd": <number>,
-  "reason": "<string>"
-}`;
+Return JSON:{"signal":"LONG|SHORT|HOLD","confidence":0-100,"stop_loss_distance_in_usd":<n>,"take_profit_distance_in_usd":<n>,"reason":"<str>"}`;
   }
 
   async generateSignal(marketData) {
-    if (!marketData?.ohlc?.length) return this._fail('No OHLC data');
-    const ind = calculateIndicatorSeries(marketData.ohlc);
-    if (!ind) return this._fail('Indicator error');
-
-    const context = { ohlc: marketData.ohlc, indicators: [] };
-    const prompt  = this._prompt(context);
-    const { ok, text, error } = await this._callWithRetry(prompt);
-    if (!ok) return this._fail(error.message);
+    if (!marketData?.ohlc?.length) return this._fail('No OHLC');
+    const prompt = this._prompt({ ohlc: marketData.ohlc });
+    const { ok, text } = await this._callWithRetry(prompt);
+    if (!ok) return this._fail('Bad AI response');
 
     try {
-      const json = text.match(/\{.*\}/s)?.[0];
-      const data = JSON.parse(json);
-      if (!['LONG', 'SHORT', 'HOLD'].includes(data.signal)) throw new Error('Bad signal');
-      return data;
-    } catch (e) {
-      log.error('Parse/validation error:', e.message);
-      return this._fail('Bad AI response');
+      return JSON.parse(text.match(/\{.*\}/s)?.[0]);
+    } catch {
+      return this._fail('Parse error');
     }
   }
 
