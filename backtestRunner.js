@@ -120,7 +120,7 @@ export class BacktestRunner {
   }
 
   async _handleSignal(market, candle, apiCalls) {
-    log.info(`[BACKTEST] [Call #${apiCalls}/${this.cfg.MAX_API_CALLS}] Gemini 2.5 flash lite`);
+    log.info(`[BACKTEST] [Call #${apiCalls}/${this.cfg.MAX_API_CALLS}]`);
     const t0 = Date.now();
 
     const sig = await this.strat.generateSignal(market);
@@ -142,6 +142,7 @@ export class BacktestRunner {
 
     const elapsed = Date.now() - t0;
     const delay   = this.cfg.MIN_SECONDS_BETWEEN_CALLS * 1000 - elapsed;
+    console.log(`WAITING ${delay}s...`);
     if (delay > 0) await new Promise(r => setTimeout(r, delay));
   }
 
