@@ -72,7 +72,6 @@ export class BacktestRunner {
         log.info(`[CANDLE] ${date}`);
         await this._handleSignal({ ohlc: window }, candle, apiCalls);
       }
-      console.log(`i = ${i} of ${candles.length-this.cfg.WARMUP_PERIOD}`);
     }
     this._printSummary(apiCalls);
   }
