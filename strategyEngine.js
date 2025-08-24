@@ -81,6 +81,7 @@ export class StrategyEngine {
         return { ok: true, text };
       } catch (err) {
         if (i === max) return { ok: false, error: err };
+        console.log(`Call retry ${i}/${max}
         await new Promise(r => setTimeout(r, 61_000));
       }
     }
