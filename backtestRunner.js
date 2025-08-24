@@ -49,7 +49,7 @@ export class BacktestRunner {
     if (!candles || candles.length < this.cfg.WARMUP_PERIOD) {
       throw new Error('Not enough data for the warm-up period.');
     }
-    console.log(`${candles.length} candles to backtest.`);
+    console.log(`Backtesting ${candles.length} candles`);
 
     let apiCalls = 0;
 
