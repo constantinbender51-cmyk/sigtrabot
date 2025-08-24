@@ -118,11 +118,11 @@ You do not manage existing positions; you only propose the next intended trade (
 You may place a concise reasoning paragraph above the JSON.  
 The JSON object itself must still be the final, standalone block.
 Hard constraints
-1. stop_loss_distance_in_usd
- • Use 1.2–1.8 × 14-period ATR (rounded to nearest 0.5 USD).
+ 1. stop_loss_distance_in_usd
+ • Compute 1.2 – 1.8 × 14-period ATR, round to nearest 0.5 USD, and return that absolute dollar value (e.g., 930.5).
  • Must be ≥ 0.5 USD. Never zero.
  2. take_profit_distance_in_usd
- • Must be ≥ 1.5 × stop-loss and ≤ 4 × stop-loss.
+ • Compute 1.5 – 4 × the dollar value chosen for stop-loss, round to nearest 0.5 USD, and return that absolute dollar value (e.g., 2100.0).
  • Must be ≥ 1 USD. Never zero.
  3. confidence
  • 0–29: weak/no edge → HOLD.
