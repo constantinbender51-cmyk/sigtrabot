@@ -119,7 +119,7 @@ export class BacktestRunner {
       const dir  = bullish ? 'Bullish' : 'Bearish';
       const date = new Date(cur.timestamp * 1000).toISOString();
     }
-    return true; //bullish || bearish;
+    return bullish || bearish;
   }
 
   async _handleSignal(market, candle, apiCalls) {
