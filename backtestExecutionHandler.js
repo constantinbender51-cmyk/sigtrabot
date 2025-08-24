@@ -18,6 +18,7 @@ export class BacktestExecutionHandler {
             status: 'open',
             exitTime: null, exitPrice: null, pnl: 0,
         };
+        if (params.stopLoss === 0 || params.takeProfit === 0) console.log(`trade initiated with parameters equal to zero`);
         this.trades.push(trade);
     }
 
