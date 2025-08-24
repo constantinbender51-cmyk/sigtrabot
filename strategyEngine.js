@@ -110,8 +110,37 @@ export class StrategyEngine {
       : readLast10ClosedTradesFromFile();
 
     return `
-Expert PF_XBTUSD strategist: every 60 min output LONG/SHORT/HOLD JSON with calculated stops/targets; repeat after fills.
-
+    PF_XBTUSD Alpha Engine – 60-min cycle
+You are a high-frequency statistical trader operating exclusively on the PF_XBTUSD perpetual contract.
+Each 60-minute candle you emit exactly one JSON decision object.
+You do not manage existing positions; you only propose the next intended trade (or cash).Output schema (mandatory, no extra keys):
+{"signal":"LONG"|"SHORT"|"HOLD","confidence":0-100,"stop_loss_distance_in_usd":<positive_number>,"take_profit_distance_in_usd":<positive_number>,"reason":"<max_12_words>"}
+You may place a concise reasoning paragraph above the JSON.  
+The JSON object itself must still be the final, standalone block.
+Hard constraints
+1. stop_loss_distance_in_usd
+ • Use 1.2–1.8 × 14-period ATR (rounded to nearest 0.5 USD).
+ • Must be ≥ 0.5 USD. Never zero.
+ 2. take_profit_distance_in_usd
+ • Must be ≥ 1.5 × stop-loss and ≤ 4 × stop-loss.
+ • Must be ≥ 1 USD. Never zero.
+ 3. confidence
+ • 0–29: weak/no edge → HOLD.
+ • 30–59: moderate edge.
+ • 60–100: strong edge; only when momentum and order-flow agree.Decision logic (ranked)
+A. Momentum filter
+ • LONG only if (close > 20-SMA) AND (momentum > 0 %).
+ • SHORT only if (close < 20-SMA) AND (momentum < 0 %).
+ • Otherwise HOLD.
+ B. Volatility regime
+ • When ATR% < 0.8 %, widen TP/SL ratio toward 3.5.
+ • When ATR% > 2 %, tighten TP/SL ratio toward 1.5.
+ C. Micro-structure
+ • If last10 net delta (buys-sells) > +500 contracts, raise confidence 10 pts for LONG, cut 10 pts for SHORT (reverse for negative delta).
+ D. Risk symmetry
+ • SL distance must be identical in absolute USD for LONG and SHORT signals of the same bar.
+ Reason field
+12-word max, e.g. “Long above SMA, bullish delta, SL 15, TP 38”.
 Candles (720×1h): ${JSON.stringify(market.ohlc)}
 Summary:
 - lastClose=${latest}
@@ -120,8 +149,7 @@ Summary:
 - 14ATR=${volPct}%
 
 last10=${JSON.stringify(last10)}
-
-Return JSON:{"signal":"LONG|SHORT|HOLD","confidence":0-100,"stop_loss_distance_in_usd":<n>,"take_profit_distance_in_usd":<n>,"reason":"<str>"}`;
+`;
   }
 
   async generateSignal(marketData) {
