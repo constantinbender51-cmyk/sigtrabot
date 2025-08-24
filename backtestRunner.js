@@ -65,6 +65,7 @@ export class BacktestRunner {
           break;
         }
         apiCalls++;
+        console.log(`${i/candles.length}% of 100% completed`)
 
         const date = new Date(candle.timestamp * 1000).toISOString();
         log.info(`[CANDLE] ${date}`);
