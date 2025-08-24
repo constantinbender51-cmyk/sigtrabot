@@ -140,7 +140,7 @@ A. Momentum filter
  D. Risk symmetry
  • SL distance must be identical in absolute USD for LONG and SHORT signals of the same bar.
  Reason field
-12-word max, e.g. “Long above SMA, bullish delta, SL 15, TP 38”.
+12-word max, e.g. “Long above SMA, bullish delta, SL 1500, TP 3800”.
 Candles (720×1h): ${JSON.stringify(market.ohlc)}
 Summary:
 - lastClose=${latest}
