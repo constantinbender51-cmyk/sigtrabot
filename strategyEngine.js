@@ -5,6 +5,10 @@ import { log } from './logger.js';
 
 const BOT_START_TIME = new Date().toISOString();   // UTC “now” when module loads
 
+const MIN_ATR_PCT       = 0.9;          // skip low-vol noise
+const DELTA_THRESHOLD   = 500;          // min abs net delta to trust flow
+const MIN_CONFIDENCE    = 30;           // < 30 → HOLD
+
 
 const readLast10ClosedTradesFromFile = () => {
   try {
@@ -127,19 +131,33 @@ Hard constraints
  3. confidence
  • 0–29: weak/no edge → HOLD.
  • 30–59: moderate edge.
- • 60–100: strong edge; only when momentum and order-flow agree.Decision logic (ranked)
+ • 60–100: strong edge; only when momentum and order-flow agree.
+ Decision logic (ranked)
 A. Momentum filter
- • LONG only if (close > 20-SMA) AND (momentum > 0 %).
- • SHORT only if (close < 20-SMA) AND (momentum < 0 %).
- • Otherwise HOLD.
- B. Volatility regime
- • When ATR% < 0.8 %, widen TP/SL ratio toward 3.5.
- • When ATR% > 2 %, tighten TP/SL ratio toward 1.5.
- C. Micro-structure
- • If last10 net delta (buys-sells) > +500 contracts, raise confidence 10 pts for LONG, cut 10 pts for SHORT (reverse for negative delta).
- D. Risk symmetry
- • SL distance must be identical in absolute USD for LONG and SHORT signals of the same bar.
- Reason field
+ • LONG  only if (close > 20-SMA) AND (momentum > 0 %)
+ • SHORT only if (close < 20-SMA) AND (momentum < 0 %)
+ • Otherwise HOLD (skip rest)
+
+B. Volatility gate
+ • If ATR% < ${MIN_ATR_PCT} % → HOLD regardless of momentum
+
+C. Micro-structure gate
+ • Compute netDelta = sum(last10.map(t => (t.side === 'LONG' ? +t.size : -t.size)))
+ • LONG  additionally requires netDelta >  +${DELTA_THRESHOLD}
+ • SHORT additionally requires netDelta <  -${DELTA_THRESHOLD}
+ • If delta conflicts → HOLD
+
+D. Confidence scaler
+ • Start with base = 50
+ • +25 pts when momentum & delta align
+ • -25 pts when ATR% < 1.2 %
+ • Cap between ${MIN_CONFIDENCE} and 100
+ • If capped below ${MIN_CONFIDENCE} → HOLD
+
+E. Risk symmetry
+ • SL distance = 1.2–1.8 × 14-period ATR (USD)
+ • TP distance = 1.5–4 × SL distance (USD)
+Reason field
 12-word max, e.g. “Long above SMA, bullish delta, SL 1500, TP 3800”.
 Candles (720×1h): ${JSON.stringify(market.ohlc)}
 Summary:
