@@ -127,8 +127,7 @@ Hard constraints
  3. confidence
  • 0–29: weak/no edge → HOLD.
  • 30–59: moderate edge.
- • 60–100: strong edge; only when momentum and order-flow agree.
-Decision logic (ranked)
+ • 60–100: strong edge; only when momentum and order-flow agree.Decision logic (ranked)
 A. Momentum filter
  • LONG only if (close > 20-SMA) AND (momentum > 0 %).
  • SHORT only if (close < 20-SMA) AND (momentum < 0 %).
