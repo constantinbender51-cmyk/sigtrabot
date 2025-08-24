@@ -156,6 +156,7 @@ last10=${JSON.stringify(last10)}
     if (!marketData?.ohlc?.length) return this._fail('No OHLC');
     const prompt = this._prompt(marketData);
     const { ok, text } = await this._callWithRetry(prompt);
+    console.log(text);
     try {
       return JSON.parse(text.match(/\{.*\}/s)?.[0]);
     } catch {
