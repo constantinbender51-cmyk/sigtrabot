@@ -45,7 +45,7 @@ export class BacktestRunner {
 
   async run() { 
     let candles = this.data.getAllCandles();
-    candles = filterByDate(candles, '2022-06-01', '2024-01-01');
+    candles = filterByDate(candles, '2022-04-01', '2023-09-01');
     if (!candles || candles.length < this.cfg.WARMUP_PERIOD) {
       throw new Error('Not enough data for the warm-up period.');
     }
@@ -59,7 +59,7 @@ export class BacktestRunner {
 
       if (this.exec.getOpenTrade()) this._checkExit(candle);
 
-      if (!this.exec.getOpenTrade() ) {//&& this._hasSignal({ ohlc: window })) {
+      if (!this.exec.getOpenTrade() && this._hasSignal({ ohlc: window })) {
         if (apiCalls >= this.cfg.MAX_API_CALLS) {
           log.info('[BACKTEST] Reached the API call limit. Ending simulation.');
           break;
