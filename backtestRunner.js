@@ -127,6 +127,7 @@ export class BacktestRunner {
     const t0 = Date.now();
 
     const sig = await this.strat.generateSignal(market);
+    console.log(sig);
     if (sig.signal !== 'HOLD' && sig.confidence >= this.cfg.MINIMUM_CONFIDENCE_THRESHOLD) {
       const params = this.risk.calculateTradeParameters(
         { ...market, balance: this.exec.balance },
