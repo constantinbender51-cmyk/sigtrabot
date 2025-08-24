@@ -65,7 +65,8 @@ export class BacktestRunner {
           break;
         }
         apiCalls++;
-        console.log(`${i/candles.length}% of 100% completed`)
+        const complete = (i-this.cfg.WARMUP_PERIOD)/(candles.length-this.cfg.WARMUP_PERIOD);
+        console.log(`${complete.toFixed(3)}% of 100% completed`)
 
         const date = new Date(candle.timestamp * 1000).toISOString();
         log.info(`[CANDLE] ${date}`);
