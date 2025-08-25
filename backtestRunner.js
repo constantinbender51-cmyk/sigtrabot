@@ -65,7 +65,7 @@ export class BacktestRunner {
           break;
         }
         apiCalls++;
-        console.log(`${i}. candle of ${candles.length-this.cfg.WARMUP_PERIOD`);
+        console.log(`${i}. candle of ${candles.length-this.cfg.WARMUP_PERIOD}`);;
         
         const date = new Date(candle.timestamp * 1000).toISOString();
         log.info(`[CANDLE] ${date}`);
