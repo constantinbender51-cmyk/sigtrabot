@@ -45,7 +45,7 @@ export class BacktestRunner {
 
   async run() { 
     let candles = this.data.getAllCandles();
-    candles = filterByDate(candles, '2022-01-01', '2024-01-01');
+    candles = filterByDate(candles, '2022-01-01', '2025-01-01');
     if (!candles || candles.length < this.cfg.WARMUP_PERIOD) {
       throw new Error('Not enough data for the warm-up period.');
     }
@@ -65,8 +65,7 @@ export class BacktestRunner {
           break;
         }
         apiCalls++;
-        const complete = (i-this.cfg.WARMUP_PERIOD)/(candles.length-this.cfg.WARMUP_PERIOD);
-        console.log(`${complete.toFixed(3)}% of 100% completed`);
+        console.log(`${i}. candle of ${candles.length-this.cfg.WARMUP_PERIOD`);
         
         const date = new Date(candle.timestamp * 1000).toISOString();
         log.info(`[CANDLE] ${date}`);
