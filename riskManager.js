@@ -58,8 +58,8 @@ export class RiskManager {
 
         const tradeParams = {
             size: parseFloat(sizeInUnits.toFixed(4)),
-            stopLoss: parseFloat(stopLossPrice.toFixed(2)),
-            takeProfit: parseFloat(takeProfitPrice.toFixed(2)),
+            stopLoss: parseFloat(stopLossPrice.toFixed(0)),
+            takeProfit: parseFloat(takeProfitPrice.toFixed(0)),
         };
 
         log.info(`[RISK] Final Trade Params: ${JSON.stringify(tradeParams, null, 2)}`);
